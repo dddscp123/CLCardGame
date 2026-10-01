@@ -73,7 +73,7 @@ body{
 #my-board{min-height:130px}
 
 .minion{
-  width:108px;height:142px;flex-shrink:0;background:#000;
+  width:128px;height:168px;flex-shrink:0;background:#000;
   border:2px solid #fff;border-radius:6px;overflow:hidden;position:relative;
   display:flex;flex-direction:column;cursor:pointer;transition:transform .15s;
 }
@@ -110,9 +110,9 @@ body{
 #btn-end-turn{font-size:14px;padding:8px 18px}
 #btn-end-turn .timer{display:block;font-size:11px;opacity:.8;font-weight:400}
 
-.hand{height:210px;display:flex;justify-content:center;align-items:flex-end;gap:10px;padding:4px;overflow-x:auto}
+.hand{height:260px;display:flex;justify-content:center;align-items:flex-end;gap:10px;padding:30px 4px 4px;overflow-x:auto}
 .card{
-  width:120px;height:180px;flex-shrink:0;background:#000;
+  width:150px;height:225px;flex-shrink:0;background:#000;
   border:3px solid #fff;border-radius:8px;overflow:visible;cursor:pointer;
   transition:transform .15s;display:flex;flex-direction:column;position:relative;
 }
@@ -123,7 +123,7 @@ body{
 .card:hover{transform:translateY(-18px) scale(1.15);z-index:20}
 .card.unplayable{filter:grayscale(.8) brightness(.5)}
 .card.selected-spell{border-color:#ffd966;box-shadow:0 0 16px #ffd966}
-.card .cimg{width:100%;height:88px;object-fit:cover;border-bottom:2px solid #fff}
+.card .cimg{width:100%;height:110px;object-fit:cover;border-bottom:2px solid #fff}
 .card .cbody{flex:1;background:#000;color:#fff;padding:4px 6px;display:flex;flex-direction:column;position:relative}
 .card .cname{font-size:12px;font-weight:700;text-align:center;color:#fff;line-height:1.1}
 .card .cfaction{position:absolute;top:4px;right:6px;font-size:8px;color:#ccc}
@@ -211,6 +211,7 @@ body{
     <div class="right-stack">
       <div class="mana">對方 💧 <span id="op-mana">1/1</span></div>
       <button id="btn-end-turn" class="btn primary">結束回合<span class="timer" id="timer">45</span></button>
+      <button id="btn-confirm" class="btn primary" style="display:none">確定手牌</button>
       <div class="mana">我方 💧 <span id="my-mana">1/1</span></div>
     </div>
   </div>
@@ -237,6 +238,13 @@ body{
   </div>
 </section>
 
+<div id="mul-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:50;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+  <div id="mul-title" style="color:#fff;font-size:26px;font-weight:bold">換牌階段</div>
+  <div id="mul-sub" style="color:#aaa;font-size:14px">點手牌換掉（最多 3 次），不想換直接按開始</div>
+  <div id="mul-hand" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"></div>
+  <button id="mul-start" class="btn primary" style="font-size:18px;padding:12px 32px">開始遊戲</button>
+</div>
+
 <script>
 // ============ 卡牌 ============
 // type: unit / vehicle / building / spell
@@ -247,25 +255,26 @@ const CARD_POOL=[
   {id:"pink",name:"小粉紅",type:"unit",cost:1,atk:1,hp:2,img:"img/pink.png",faction:"red",desc:"網絡打手：每回合結束+1生命",flavor:"小日子都給我死"},
   {id:"monk",name:"破戒僧",type:"unit",cost:1,atk:1,hp:2,img:"img/monk.png",faction:"purple",desc:"忍無可忍：上場立即打對方前排一次(不還手)",flavor:"忍無可忍,無須再忍"},
   {id:"shield",name:"防暴盾牌",type:"spell",cost:1,atk:0,hp:0,img:"img/shield.png",faction:"red",desc:"給一名友方單位【防線】",flavor:"非常nb的盾牌"},
-  {id:"city",name:"城市",type:"building",cost:1,atk:0,hp:2,img:"img/placeholder.png",faction:"red",desc:"人口生產：回合結束手牌+1韭菜(上限2)",flavor:"這裏好多吃的"},
-  {id:"leek",name:"韭菜",type:"unit",cost:1,atk:0,hp:3,img:"img/placeholder.png",faction:"white",desc:"",flavor:"吃的嗎？"},
+  {id:"city",name:"城市",type:"building",cost:1,atk:0,hp:2,img:"img/城市.png",faction:"red",desc:"人口生產：回合結束手牌+1韭菜(上限2)",flavor:"這裏好多吃的"},
+  {id:"leek",name:"韭菜",type:"unit",cost:1,atk:0,hp:3,img:"img/韭菜.png",faction:"white",desc:"",flavor:"吃的嗎？"},
   {id:"plane",name:"烏克蘭戰機",type:"vehicle",cost:2,atk:2,hp:3,img:"img/plane.png",faction:"gray",desc:"節約成本：摧毀對方載具則下回合+1費",flavor:"親自部署"},
   {id:"turret",name:"簡易炮臺",type:"building",cost:2,atk:2,hp:4,img:"img/turret.png",faction:"gray",trait:"guard",desc:"協防：不會主動攻擊，只還手",flavor:"人工組裝,能用就行"},
-  {id:"gunner",name:"東方快槍手",type:"unit",cost:2,atk:2,hp:1,img:"img/cn2.jpg",faction:"white",trait:"charge",desc:"先攻：出場即可攻擊。自尋死路：擊殺敵人+1傷",flavor:"這是你們自尋死路"},
-  {id:"pla",name:"解放軍",type:"unit",cost:2,atk:2,hp:3,img:"img/placeholder.png",faction:"red",desc:"",flavor:"爲祖國而戰"},
+  {id:"gunner",name:"東方快槍手",type:"unit",cost:2,atk:2,hp:1,img:"img/東方快槍手.png",faction:"white",trait:"charge",desc:"先攻：出場即可攻擊。自尋死路：擊殺敵人+1傷",flavor:"這是你們自尋死路"},
+  {id:"pla",name:"解放軍",type:"unit",cost:2,atk:2,hp:3,img:"img/解放軍.png",faction:"red",desc:"",flavor:"爲祖國而戰"},
   {id:"police",name:"空中執法",type:"spell",cost:2,atk:0,hp:0,img:"img/police.png",faction:"white",desc:"對一名敵方單位造成2傷。擊殺則抽1張",flavor:"佛羅里達州警察"},
-  {id:"mock",name:"嘲諷",type:"spell",cost:2,atk:0,hp:0,img:"img/placeholder.png",faction:"red",desc:"對一名敵方將軍造成5傷，抽1張",flavor:"這明顯是諷刺當今的..."},
-  {id:"goodcit",name:"好市民",type:"unit",cost:3,atk:1,hp:3,img:"img/placeholder.png",faction:"white",desc:"極端言論：陣亡時對隨機敵方單位造成3傷",flavor:"一次性的言論自由"},
-  {id:"free",name:"言論自由",type:"spell",cost:3,atk:0,hp:0,img:"img/placeholder.png",faction:"red",desc:"隨機生成兩張費用≤4的卡",flavor:"接著說啊"},
-  {id:"redguard",name:"紅衛兵",type:"unit",cost:3,atk:3,hp:3,img:"img/placeholder.png",faction:"red",desc:"造反有理：每有一名友方將軍+1攻+2血",flavor:"我們就是毛主席的紅衛士"},
-  {id:"mbase",name:"軍事基地",type:"building",cost:3,atk:1,hp:4,img:"img/placeholder.png",faction:"red",trait:"guard",desc:"協防。生產部隊：每回合部署一張解放軍(上限2)",flavor:"小日子都給我死"},
+  {id:"mock",name:"嘲諷",type:"spell",cost:2,atk:0,hp:0,img:"img/諷刺.png",faction:"red",desc:"對一名敵方將軍造成5傷，抽1張",flavor:"這明顯是諷刺當今的天子"},
+  {id:"goodcit",name:"好市民",type:"unit",cost:3,atk:1,hp:3,img:"img/好市民.png",faction:"white",desc:"極端言論：陣亡時對隨機敵方單位造成3傷",flavor:"一次性的言論自由"},
+  {id:"free",name:"言論自由",type:"spell",cost:3,atk:0,hp:0,img:"img/言論自由.png",faction:"red",desc:"隨機生成兩張費用≤4的卡",flavor:"接著說啊"},
+  {id:"redguard",name:"紅衛兵",type:"unit",cost:3,atk:3,hp:3,img:"img/紅衛兵.png",faction:"red",desc:"造反有理：每有一名友方將軍+1攻+2血",flavor:"我們就是毛主席的紅衛士"},
+  {id:"mbase",name:"軍事基地",type:"building",cost:3,atk:1,hp:4,img:"img/軍事基地.png",faction:"red",trait:"guard",desc:"協防。生產部隊：每回合部署一張解放軍(上限2)",flavor:"小日子都給我死"},
   {id:"green",name:"綠色毒刺",type:"unit",cost:3,atk:2,hp:3,img:"img/green.png",faction:"white",desc:"鋒利髮型：回合結束對所有敵方造成1傷",flavor:"綠色戰神"},
-  {id:"berzerk",name:"狂戰士",type:"unit",cost:3,atk:3,hp:5,img:"img/placeholder.png",faction:"red",desc:"主席近衛：每損失1血+1攻",flavor:"來交流交流"},
+  {id:"berzerk",name:"狂戰士",type:"unit",cost:3,atk:3,hp:5,img:"img/狂戰士.png",faction:"red",desc:"主席近衛：每損失1血+1攻",flavor:"來交流交流"},
   {id:"terror",name:"恐怖襲擊",type:"spell",cost:3,atk:0,hp:0,img:"img/terror.png",faction:"white",desc:"對敵方所有建築造成3傷",flavor:"爲什麽石油越來越少了"},
-  {id:"famine",name:"三年大饑荒",type:"spell",cost:4,atk:0,hp:0,img:"img/placeholder.png",faction:"red",desc:"敵方所有非載具單位生命變為1",flavor:"人類歷史上規模最大的饑荒"},
-  {id:"purge",name:"净化",type:"spell",cost:4,atk:0,hp:0,img:"img/placeholder.png",faction:"red",desc:"對敵方所有單位造成3傷",flavor:"專業清理人口"},
-  {id:"jas",name:"曾鈺成",type:"general",cost:4,atk:2,hp:5,img:"img/placeholder.png",faction:"red",desc:"隊友太雷：回合結束隨機打一名友方2傷",flavor:"我建議你少講點沒用的話"},
-  {id:"command",name:"親自指揮",type:"spell",cost:4,atk:0,hp:0,img:"img/placeholder.png",faction:"red",desc:"一名友方單位+2攻+2血",flavor:"你真的覺得自己逃得了嗎"},
+  {id:"famine",name:"三年大饑荒",type:"spell",cost:4,atk:0,hp:0,img:"img/饑荒.png",faction:"red",desc:"敵方所有非載具單位生命變為1",flavor:"人類歷史上規模最大的饑荒"},
+  {id:"purge",name:"净化",type:"spell",cost:4,atk:0,hp:0,img:"img/净化.png",faction:"red",desc:"對敵方所有單位造成3傷",flavor:"專業清理人口"},
+  {id:"jas",name:"曾鈺成",type:"general",cost:4,atk:2,hp:5,img:"img/曾.png",faction:"red",desc:"隊友太雷：回合結束隨機打一名友方2傷",flavor:"我建議你少講點沒用的話"},
+  {id:"command",name:"親自指揮",type:"spell",cost:4,atk:0,hp:0,img:"img/親自執行.png",faction:"red",desc:"一名友方單位+2攻+2血",flavor:"你真的覺得自己逃得了嗎"},
+  {id:"hundred",name:"百人斬",type:"spell",cost:0,atk:0,hp:0,img:"img/百人斬.png",faction:"red",desc:"對我方全體單位造成1傷害",flavor:"你在狂什麽"},
 ];
 const CARD_BY_ID=Object.fromEntries(CARD_POOL.map(c=>[c.id,c]));
 function buildDeck(){
@@ -293,8 +302,9 @@ function genCode(){
   return s;
 }
 function makePlayer(name){
-  const deck=buildDeck(),hand=deck.splice(0,START_HAND);
-  return {name,hp:START_HP,maxMana:1,mana:1,deck,hand,board:new Array(MAX_BOARD).fill(null),didPlay:false,bonusNextMana:0};
+  const deck=buildDeck();
+  const hand=deck.splice(0,5);
+  return {name,hp:START_HP,maxMana:1,mana:1,deck,hand,board:new Array(MAX_BOARD).fill(null),didPlay:false,bonusNextMana:0,confirmed:false,redraws:3};
 }
 
 // ============ 連線 ============
@@ -341,7 +351,7 @@ function joinRoom(code,n){
 }
 function handleHost(msg){
   if(msg.type==="hello")startGame(msg.name);
-  else if(msg.type==="action"){applyAction(msg.action);broadcast();}
+  else if(msg.type==="action"){applyAction(msg.action,"p2");broadcast();}
   else if(msg.type==="leave")showDisconnect();
 }
 function handleGuest(msg){
@@ -356,8 +366,7 @@ function startGame(opName){
   const myName=$("input-name").value.trim()||"玩家 1";
   const p1=makePlayer(myName),p2=makePlayer(opName);
   const first=Math.random()<0.5?"p1":"p2";
-  gameState={p1,p2,turn:first,firstPlayer:first,round:1,winner:null,status:"playing",fx:[]};
-  gameState[first].mana=gameState[first].maxMana;
+  gameState={p1,p2,turn:first,firstPlayer:first,round:1,winner:null,status:"mulligan",fx:[]};
   showScreen("game");broadcast();
 }
 
@@ -399,7 +408,16 @@ function roundEndEffects(){
       const enTaunts=alive(en).filter(x=>x.trait==="taunt");
       if(e){
         const ma=effAtk(m,alive(my)),ea=effAtk(e,alive(en));
-        e.hp-=ma;m.hp-=ea;
+        const mCharge=m.trait==="charge", eCharge=e.trait==="charge";
+        if(mCharge&&!eCharge){
+          e.hp-=ma;
+          if(e.hp>0)m.hp-=ea;
+        }else if(eCharge&&!mCharge){
+          m.hp-=ea;
+          if(m.hp>0)e.hp-=ma;
+        }else{
+          e.hp-=ma;m.hp-=ea;
+        }
         fx.push({type:"clash",pos:i});
       }else if(enTaunts.length>0){
         // 對面沒卡但有防線，去打防線
@@ -431,7 +449,24 @@ function effAtk(m,allies){
 }
 
 // ============ 行動 ============
-function applyAction(act){
+function applyAction(act,senderSlot){
+  if(gameState.status==="mulligan"){
+    const me=gameState[senderSlot||Net.mySlot];
+    if(act.type==="redraw"&&me.redraws>0){
+      const cid=me.hand[act.index];
+      me.hand.splice(act.index,1);
+      me.hand.push(me.deck.shift());
+      me.deck.push(cid);
+      me.redraws--;
+    }else if(act.type==="confirm"){
+      me.confirmed=true;
+      if(gameState.p1.confirmed&&gameState.p2.confirmed){
+        gameState.status="playing";
+        gameState[gameState.firstPlayer].mana=gameState[gameState.firstPlayer].maxMana;
+      }
+    }
+    return;
+  }
   if(gameState.status!=="playing")return;
   const cur=gameState.turn, me=gameState[cur], op=gameState[cur==="p1"?"p2":"p1"];
   gameState.fx=[];
@@ -555,6 +590,12 @@ function doEnd(){
   if(Net.role==="host"){applyAction({type:"endTurn"});broadcast();}
   else Net.conn.send({type:"action",action:{type:"endTurn"}});
 }
+function sendAction(a){
+  if(Net.role==="host"){applyAction(a);broadcast();}
+  else Net.conn.send({type:"action",action:a});
+}
+function doRedraw(i){sendAction({type:"redraw",index:i});}
+function doConfirm(){sendAction({type:"confirm"});}
 function broadcast(){
   if(Net.conn&&Net.role==="host")Net.conn.send({type:"state",state:gameState});
   render();if(gameState.winner)setTimeout(showResult,1200);
@@ -597,7 +638,7 @@ $("btn-do-join").onclick=()=>{
 $("btn-leave-lobby").onclick=quit;
 $("btn-end-turn").onclick=doEnd;
 $("btn-back-home").onclick=quit;
-$("op-hero").onclick=()=>{if(selectedAttackerUid)doAttackHero();};
+$("mul-start").onclick=doConfirm;
 
 function render(){
   if(!gameState)return;
@@ -610,12 +651,30 @@ function render(){
   $("my-mana").textContent=`${me.mana}/${me.maxMana}`;
   $("op-mana").textContent=`${op.mana}/${op.maxMana}`;
   const t=$("turn-indicator");
-  if(isMyTurn()){t.textContent=`你的回合（第 ${gameState.round} 回合）`;t.classList.remove("opp");startTimer();}
-  else{t.textContent=`${op.name||"對手"} 思考中…`;t.classList.add("opp");stopTimer();}
+  if(gameState.status==="mulligan"){
+    t.textContent="換牌階段";
+    t.classList.remove("opp");stopTimer();
+    $("btn-end-turn").style.display="none";
+    $("btn-confirm").style.display="none";
+    $("mul-overlay").style.display="flex";
+    $("mul-title").textContent=me.confirmed?"等待對手開始…":"換牌階段";
+    $("mul-sub").textContent=me.confirmed?"對手還在看牌":"剩餘換牌次數："+me.redraws;
+    $("mul-start").disabled=me.confirmed;
+    $("mul-start").textContent=me.confirmed?"已送出 ✓":"開始遊戲";
+    renderMulHand(me);
+  }else{
+    $("mul-overlay").style.display="none";
+    $("btn-confirm").style.display="none";
+    if(isMyTurn()){
+      t.textContent=`你的回合（第 ${gameState.round} 回合）`;t.classList.remove("opp");startTimer();
+      $("btn-end-turn").style.display="";
+    }else{
+      t.textContent=`${op.name||"對手"} 思考中…`;t.classList.add("opp");stopTimer();
+      $("btn-end-turn").style.display="";
+    }
+  }
   updateTimerUI();
-  // 對方頭像是否可點（打臉）
-  const canHitHero=selectedAttackerUid&&!op.board.some(m=>m.trait==="taunt");
-  $("op-hero").style.boxShadow=canHitHero?"0 0 16px #f66":"";
+  $("op-hero").style.boxShadow="";
   renderBoard($("my-board"),me.board,false);
   renderBoard($("op-board"),op.board,true);
   renderOpHand(op.hand.length);
@@ -624,6 +683,25 @@ function render(){
 function renderOpHand(count){
   const c=$("op-hand");c.innerHTML="";
   for(let i=0;i<count;i++){const b=document.createElement("div");b.className="back";c.appendChild(b);}
+}
+function renderMulHand(me){
+  const c=$("mul-hand");c.innerHTML="";
+  me.hand.forEach((cid,i)=>{
+    const card=CARD_BY_ID[cid],el=document.createElement("div");
+    el.className="card f-"+card.faction;
+    el.style.transform="scale(1.3)";
+    el.style.margin="0 18px";
+    el.style.cursor=me.confirmed||me.redraws<=0?"default":"pointer";
+    el.innerHTML=`<img class="cimg" src="${card.img}" />
+      <div class="cbody"><div class="cname">${card.name}</div><div class="cflavor">${card.flavor}</div></div>
+      <div class="cstatbar">
+        <div class="dmg"><span class="lbl">費用</span><span class="val">${card.cost}</span></div>
+        ${card.atk?`<div class="cost"><span class="lbl">攻</span><span class="val">${card.atk}</span></div>`:""}
+        ${card.hp?`<div class="hp"><span class="lbl">血</span><span class="val">${card.hp}</span></div>`:""}
+      </div>`;
+    el.onclick=()=>{if(!me.confirmed&&me.redraws>0)doRedraw(i);};
+    c.appendChild(el);
+  });
 }
 const SLOT_MAP=[3,4,2,5,1,6,0,7];
 function renderBoard(c,board,isEnemy){
@@ -693,15 +771,17 @@ function renderHand(me){
   });
 }
 function onCardClick(i){
+  if(gameState.status==="mulligan"){
+    if(!myData().confirmed&&myData().redraws>0)doRedraw(i);
+    return;
+  }
   if(!isMyTurn()){toast("還不是你的回合");return;}
   const me=gameState[Net.mySlot],cid=me.hand[i],card=CARD_BY_ID[cid];
   if(!card)return;
   if(me.mana<card.cost){toast("費用不足");return;}
   if(card.type!=="spell"){doPlayCard(i);return;}
-  // 不需目標的法術
   const noTarget=["terror","hundred","free","famine","purge"];
   if(noTarget.includes(card.id)){doPlayCard(i);return;}
-  // 需選目標的法術
   const needFriendly=(card.id==="shield"||card.id==="command");
   if(targeting&&targeting.spellIdx===i){targeting=null;render();return;}
   const board=needFriendly?me.board:opData().board;
@@ -711,38 +791,10 @@ function onCardClick(i){
   render();
 }
 function onMinionClick(uid,isEnemy){
-  if(!isMyTurn())return;
-  // 法術選目標優先
-  if(targeting){
-    if(targeting.kind==="enemy"&&isEnemy)doPlayCard(targeting.spellIdx,uid);
-    else if(targeting.kind==="friendly"&&!isEnemy)doPlayCard(targeting.spellIdx,uid);
-    return;
-  }
-  // 攻擊選擇
-  const me=gameState[Net.mySlot];
-  if(!isEnemy){
-    // 點自己的怪：選為攻擊者
-    const m=me.board.find(x=>x.uid===uid);
-    if(!m)return;
-    if(m.sick){toast("這隻剛出來，本回合不能攻擊");return;}
-    if(m.attacked){toast("這隻已經攻擊過了");return;}
-    if(m.trait==="guard"){toast("協防怪不會主動攻擊");return;}
-    selectedAttackerUid=selectedAttackerUid===uid?null:uid;
-    render();
-  }else{
-    // 點對方的怪：如果已選攻擊者，就打它
-    if(selectedAttackerUid)doAttack(selectedAttackerUid,uid);
-  }
-}
-function doAttack(attackerUid,targetUid){
-  if(Net.role==="host"){applyAction({type:"attack",attackerUid,targetUid});broadcast();}
-  else Net.conn.send({type:"action",action:{type:"attack",attackerUid,targetUid}});
-  selectedAttackerUid=null;
-}
-function doAttackHero(){
-  if(!selectedAttackerUid)return;
-  if(opData().board.some(m=>m.trait==="taunt")){toast("有防線怪，不能打臉");return;}
-  doAttack(selectedAttackerUid,"hero");
+  if(gameState.status!=="playing")return;
+  if(!isMyTurn()||!targeting)return;
+  if(targeting.kind==="enemy"&&isEnemy)doPlayCard(targeting.spellIdx,uid);
+  else if(targeting.kind==="friendly"&&!isEnemy)doPlayCard(targeting.spellIdx,uid);
 }
 
 // ============ 動畫 ============
