@@ -69,7 +69,9 @@ body{
   background:linear-gradient(160deg,#3a2a5a,#1a0a3a);border:1px solid #8a6ac0;
 }
 .board{min-height:140px;display:flex;flex-wrap:nowrap;gap:10px;align-items:center;justify-content:center;padding:0}
-.slot{width:96px;height:128px;flex-shrink:0}
+.slot{width:128px;height:168px;flex-shrink:0;border:2px dashed rgba(255,255,255,.15);border-radius:6px}
+.slot.slot-targetable{border-color:#ffd966;box-shadow:0 0 12px #ffd966;cursor:pointer;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px #ffd966}50%{box-shadow:0 0 18px #ffd966}}
 #my-board{min-height:130px}
 
 .minion{
@@ -85,15 +87,19 @@ body{
 .minion.guard{border-style:dashed}
 .minion.targetable{border-color:#ff6b6b;box-shadow:0 0 12px #f66;cursor:crosshair}
 .minion.friendly-targetable{border-color:#4caf50;box-shadow:0 0 12px #4caf50;cursor:crosshair}
+.minion.shielded{box-shadow:0 0 10px #6cf inset, 0 0 8px #6cf}
 .minion.attacking{animation:lungeUp .4s}
 .minion.attacking-down{animation:lungeDown .4s}
 @keyframes lungeUp{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
 @keyframes lungeDown{0%,100%{transform:translateY(0)}50%{transform:translateY(20px)}}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,-2px)}80%{transform:translate(3px,2px)}}
+.minion.shake{animation:shake .3s}
+body.hit-shake{animation:shake .3s}
 .minion .mimg{width:100%;height:70px;object-fit:cover}
 .minion .mbox{flex:1;background:#000;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px}
-.minion .mname{font-size:9px;font-weight:700;color:#fff;text-align:center;line-height:1.1}
-.minion .mtype{font-size:7px;color:#8af}
-.minion .mstats{display:flex;justify-content:space-between;width:100%;padding:0 3px;font-size:11px;font-weight:700;margin-top:1px}
+.minion .mname{font-size:12px;font-weight:700;color:#fff;text-align:center;line-height:1.15}
+.minion .mtype{font-size:9px;color:#8af;font-weight:600}
+.minion .mstats{display:flex;justify-content:space-between;width:100%;padding:0 4px;font-size:15px;font-weight:800;margin-top:2px}
 .minion .mstats .a{color:#ff5252}
 .minion .mstats .h{color:#4caf50}
 .minion .traits{position:absolute;top:1px;left:2px;font-size:8px;color:#ff9800}
@@ -112,7 +118,7 @@ body{
 
 .hand{height:260px;display:flex;justify-content:center;align-items:flex-end;gap:10px;padding:30px 4px 4px;overflow-x:auto}
 .card{
-  width:150px;height:225px;flex-shrink:0;background:#000;
+  width:170px;height:255px;flex-shrink:0;background:#000;
   border:3px solid #fff;border-radius:8px;overflow:visible;cursor:pointer;
   transition:transform .15s;display:flex;flex-direction:column;position:relative;
 }
@@ -123,15 +129,15 @@ body{
 .card:hover{transform:translateY(-18px) scale(1.15);z-index:20}
 .card.unplayable{filter:grayscale(.8) brightness(.5)}
 .card.selected-spell{border-color:#ffd966;box-shadow:0 0 16px #ffd966}
-.card .cimg{width:100%;height:110px;object-fit:cover;border-bottom:2px solid #fff}
-.card .cbody{flex:1;background:#000;color:#fff;padding:4px 6px;display:flex;flex-direction:column;position:relative}
-.card .cname{font-size:12px;font-weight:700;text-align:center;color:#fff;line-height:1.1}
+.card .cimg{width:100%;height:125px;object-fit:cover;border-bottom:2px solid #fff}
+.card .cbody{flex:1;background:#000;color:#fff;padding:5px 7px;display:flex;flex-direction:column;position:relative}
+.card .cname{font-size:15px;font-weight:700;text-align:center;color:#fff;line-height:1.15}
 .card .cfaction{position:absolute;top:4px;right:6px;font-size:8px;color:#ccc}
-.card .cdesc{font-size:9px;color:#fff;text-align:center;margin-top:3px;line-height:1.2}
-.card .cflavor{font-size:8px;color:#888;text-align:center;margin-top:2px;font-style:italic}
-.card .cstatbar{display:flex;justify-content:space-between;align-items:center;border-top:2px solid #fff;padding:2px 6px;background:#000}
-.card .cstatbar .lbl{font-size:8px;color:#888;text-align:center;display:block}
-.card .cstatbar .val{font-size:14px;font-weight:700;text-align:center;display:block}
+.card .cdesc{font-size:12px;color:#fff;text-align:center;margin-top:4px;line-height:1.3;font-weight:500}
+.card .cflavor{font-size:10px;color:#bbb;text-align:center;margin-top:3px;font-style:italic}
+.card .cstatbar{display:flex;justify-content:space-between;align-items:center;border-top:2px solid #fff;padding:3px 8px;background:#000}
+.card .cstatbar .lbl{font-size:10px;color:#aaa;text-align:center;display:block}
+.card .cstatbar .val{font-size:18px;font-weight:800;text-align:center;display:block}
 .card .cstatbar .dmg .val{color:#ff5252}
 .card .cstatbar .cost .val{color:#ff9800}
 .card .cstatbar .hp .val{color:#4caf50}
@@ -179,6 +185,15 @@ body{
       <input id="input-code" type="text" maxlength="6" placeholder="4 位代碼" style="text-transform:uppercase" />
     </label>
     <button id="btn-do-join" class="btn primary" style="display:none">確認加入</button>
+    <label class="field"><span>陣營</span>
+      <select id="input-faction" style="width:100%;padding:10px;background:#111;color:#fff;border:1px solid #444;border-radius:6px">
+        <option value="red">共產黨</option>
+      </select>
+    </label>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="btn-leaderboard" class="btn" style="flex:1;font-size:13px">🏆 排行榜</button>
+      <button id="btn-gallery" class="btn" style="flex:1;font-size:13px">📖 圖鑒</button>
+    </div>
     <p id="home-error" class="error"></p>
   </div>
 </section>
@@ -195,11 +210,11 @@ body{
 
 <section id="screen-game" class="screen">
   <div class="top-row">
-    <div class="hero-info" id="op-hero" style="cursor:pointer">
-      <div class="hero-face">👤</div>
-      <div class="hero-meta">
-        <div class="hname" id="op-name">對手</div>
-        <div class="hph">❤️ <span id="op-hp">30</span></div>
+    <div id="op-hero" style="position:fixed;left:12px;top:12px;z-index:50;background:#000;border:3px solid #ff5252;border-radius:8px;width:110px;overflow:hidden;box-shadow:0 0 12px rgba(255,82,82,.6)">
+      <img src="img/1.png" style="width:100%;height:80px;object-fit:cover;display:block" />
+      <div style="background:#000;color:#fff;padding:4px 6px;text-align:center">
+        <div style="font-size:12px;font-weight:bold" id="op-name">東哥</div>
+        <div style="font-size:13px;color:#ff8a8a">❤️ <span id="op-hp">30</span></div>
       </div>
     </div>
   </div>
@@ -220,11 +235,12 @@ body{
 
   <div class="hand" id="my-hand"></div>
 
-  <div id="my-hero-corner" style="position:fixed;left:12px;bottom:12px;display:flex;align-items:center;gap:10px;z-index:50;background:rgba(0,0,0,.6);padding:6px 10px;border-radius:10px">
-    <div class="hero-face" style="width:44px;height:44px;font-size:26px">😊</div>
-    <div class="hero-meta">
-      <div class="hname" id="my-name">你</div>
-      <div class="hph">❤️ <span id="my-hp">30</span></div>
+  <div id="my-hero-corner" style="position:fixed;left:12px;bottom:12px;z-index:50;background:#000;border:3px solid #ff5252;border-radius:8px;width:110px;overflow:hidden;box-shadow:0 0 12px rgba(255,82,82,.6)">
+    <img src="img/1.png" style="width:100%;height:80px;object-fit:cover;display:block" />
+    <div style="background:#000;color:#fff;padding:4px 6px;text-align:center">
+      <div style="font-size:12px;font-weight:bold" id="my-name">東哥</div>
+      <div style="font-size:13px;color:#ff8a8a">❤️ <span id="my-hp">30</span></div>
+      <div style="font-size:9px;color:#aaa;margin-top:2px;line-height:1.2">共產黨加成：對友方造成傷害+1費(每回合上限4)<br>終章：<10血時費上限6</div>
     </div>
   </div>
   <div id="toast" class="toast"></div>
@@ -245,28 +261,43 @@ body{
   <button id="mul-start" class="btn primary" style="font-size:18px;padding:12px 32px">開始遊戲</button>
 </div>
 
+<div id="modal-gallery" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;overflow-y:auto;padding:20px">
+  <h2 style="color:#fff;text-align:center;margin-bottom:16px">📖 卡牌圖鑒</h2>
+  <div id="gallery-grid" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:1200px;margin:0 auto"></div>
+  <button onclick="document.getElementById('modal-gallery').style.display='none'" class="btn primary" style="display:block;margin:20px auto">關閉</button>
+</div>
+
+<div id="modal-board" style="position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;display:none;align-items:center;justify-content:center">
+  <div style="background:#111;padding:30px;border-radius:12px;max-width:400px;width:90%;color:#fff">
+    <h2 style="text-align:center;margin-bottom:16px">🏆 排行榜</h2>
+    <p style="text-align:center;color:#aaa">目前還沒有數據，打完一場就上榜！</p>
+    <button onclick="document.getElementById('modal-board').style.display='none'" class="btn primary" style="display:block;margin:20px auto 0">關閉</button>
+  </div>
+</div>
+
 <script>
 // ============ 卡牌 ============
-// type: unit / vehicle / building / spell
-// trait: guard=協防, taunt=防線
+// type: unit / vehicle / building / spell / general
+// trait: guard=協防, taunt=防線, charge=先攻
+// bcTarget: "friendly" / "enemy" — 帶戰吼需要選目標的隨從
 const CARD_POOL=[
   {id:"steve",name:"Steve",type:"unit",cost:1,atk:1,hp:2,img:"img/steve.png",faction:"white",desc:"",flavor:"這是我的世界嗎？"},
   {id:"miner",name:"黑奴",type:"unit",cost:1,atk:1,hp:1,img:"img/miner.png",faction:"purple",desc:"",flavor:"小心搬運,易碎物品"},
   {id:"pink",name:"小粉紅",type:"unit",cost:1,atk:1,hp:2,img:"img/pink.png",faction:"red",desc:"網絡打手：每回合結束+1生命",flavor:"小日子都給我死"},
   {id:"monk",name:"破戒僧",type:"unit",cost:1,atk:1,hp:2,img:"img/monk.png",faction:"purple",desc:"忍無可忍：上場立即打對方前排一次(不還手)",flavor:"忍無可忍,無須再忍"},
   {id:"shield",name:"防暴盾牌",type:"spell",cost:1,atk:0,hp:0,img:"img/shield.png",faction:"red",desc:"給一名友方單位【防線】",flavor:"非常nb的盾牌"},
-  {id:"city",name:"城市",type:"building",cost:1,atk:0,hp:2,img:"img/city.png",faction:"red",desc:"人口生產：回合結束手牌+1韭菜(上限2)",flavor:"這裏好多吃的"},
-  {id:"leek",name:"韭菜",type:"unit",cost:1,atk:0,hp:3,img:"img/leek.png",faction:"white",desc:"",flavor:"吃的嗎？"},
+  {id:"city",name:"城市",type:"building",cost:2,atk:0,hp:2,img:"img/city.png",faction:"red",desc:"人口生產：回合結束手牌+1韭菜(上限2)",flavor:"這裏好多吃的"},
+  {id:"leek",name:"韭菜",type:"unit",cost:1,atk:0,hp:3,img:"img/leek.png",faction:"red",desc:"",flavor:"吃的嗎？"},
   {id:"plane",name:"烏克蘭戰機",type:"vehicle",cost:2,atk:2,hp:3,img:"img/plane.png",faction:"gray",desc:"節約成本：摧毀對方載具則下回合+1費",flavor:"親自部署"},
   {id:"turret",name:"簡易炮臺",type:"building",cost:2,atk:2,hp:4,img:"img/turret.png",faction:"gray",trait:"guard",desc:"協防：不會主動攻擊，只還手",flavor:"人工組裝,能用就行"},
-  {id:"gunner",name:"東方快槍手",type:"unit",cost:2,atk:2,hp:1,img:"img/gunner.png",faction:"white",trait:"charge",desc:"先攻：出場即可攻擊。自尋死路：擊殺敵人+1傷",flavor:"這是你們自尋死路"},
+  {id:"gunner",name:"東方快槍手",type:"unit",cost:2,atk:2,hp:1,img:"img/gunner.png",faction:"red",trait:"charge",desc:"先攻：出場即可攻擊。自尋死路：擊殺敵人+1傷",flavor:"這是你們自尋死路"},
   {id:"pla",name:"解放軍",type:"unit",cost:2,atk:2,hp:3,img:"img/pla.png",faction:"red",desc:"",flavor:"爲祖國而戰"},
   {id:"police",name:"空中執法",type:"spell",cost:2,atk:0,hp:0,img:"img/police.png",faction:"white",desc:"對一名敵方單位造成2傷。擊殺則抽1張",flavor:"佛羅里達州警察"},
   {id:"mock",name:"嘲諷",type:"spell",cost:2,atk:0,hp:0,img:"img/mock.png",faction:"red",desc:"對一名敵方將軍造成5傷，抽1張",flavor:"這明顯是諷刺當今的天子"},
-  {id:"goodcit",name:"好市民",type:"unit",cost:3,atk:1,hp:3,img:"img/goodcit.png",faction:"white",desc:"極端言論：陣亡時對隨機敵方單位造成3傷",flavor:"一次性的言論自由"},
+  {id:"goodcit",name:"好市民",type:"unit",cost:3,atk:1,hp:3,img:"img/goodcit.png",faction:"red",desc:"極端言論：陣亡時對隨機敵方單位造成3傷",flavor:"一次性的言論自由"},
   {id:"free",name:"言論自由",type:"spell",cost:3,atk:0,hp:0,img:"img/free.png",faction:"red",desc:"隨機生成兩張費用≤4的卡",flavor:"接著說啊"},
   {id:"redguard",name:"紅衛兵",type:"unit",cost:3,atk:3,hp:3,img:"img/redguard.png",faction:"red",desc:"造反有理：每有一名友方將軍+1攻+2血",flavor:"我們就是毛主席的紅衛士"},
-  {id:"mbase",name:"軍事基地",type:"building",cost:3,atk:1,hp:4,img:"img/mbase.png",faction:"red",trait:"guard",desc:"協防。生產部隊：每回合部署一張解放軍(上限2)",flavor:"小日子都給我死"},
+  {id:"mbase",name:"軍事基地",type:"building",cost:4,atk:1,hp:4,img:"img/mbase.png",faction:"red",trait:"guard",desc:"協防。生產部隊：每回合部署一張解放軍(上限2)",flavor:"小日子都給我死"},
   {id:"green",name:"綠色毒刺",type:"unit",cost:3,atk:2,hp:3,img:"img/green.png",faction:"white",desc:"鋒利髮型：回合結束對所有敵方造成1傷",flavor:"綠色戰神"},
   {id:"berzerk",name:"狂戰士",type:"unit",cost:3,atk:3,hp:5,img:"img/berzerk.png",faction:"red",desc:"主席近衛：每損失1血+1攻",flavor:"來交流交流"},
   {id:"terror",name:"恐怖襲擊",type:"spell",cost:3,atk:0,hp:0,img:"img/terror.png",faction:"white",desc:"對敵方所有建築造成3傷",flavor:"爲什麽石油越來越少了"},
@@ -275,13 +306,35 @@ const CARD_POOL=[
   {id:"jas",name:"曾鈺成",type:"general",cost:4,atk:2,hp:5,img:"img/jas.png",faction:"red",desc:"隊友太雷：回合結束隨機打一名友方2傷",flavor:"我建議你少講點沒用的話"},
   {id:"command",name:"親自指揮",type:"spell",cost:4,atk:0,hp:0,img:"img/command.png",faction:"red",desc:"一名友方單位+2攻+2血",flavor:"你真的覺得自己逃得了嗎"},
   {id:"hundred",name:"百人斬",type:"spell",cost:0,atk:0,hp:0,img:"img/hundred.png",faction:"red",desc:"對我方全體單位造成1傷害",flavor:"你在狂什麽"},
+
+  // ===== 新卡 =====
+  {id:"passport",name:"中國護照",type:"spell",cost:5,atk:0,hp:0,img:"img/passport.png",faction:"red",desc:"指定一名友方單位：本回合不會死亡或受到傷害",flavor:"中國護照 以一敵百"},
+  {id:"burnboats",name:"破釜沉舟",type:"spell",cost:5,atk:0,hp:0,img:"img/burnboats.png",faction:"red",desc:"抽3張共產黨卡牌",flavor:"人海戰術"},
+  {id:"j20",name:"殲-20",type:"vehicle",cost:5,atk:5,hp:4,img:"img/j20.png",faction:"red",desc:"",flavor:"踹門神奇"},
+  {id:"divineshine",name:"爆神裝",type:"spell",cost:6,atk:0,hp:0,img:"img/divineshine.png",faction:"red",desc:"隨機殺死敵方2名單位卡 並抽2張卡",flavor:"崛起吧"},
+  {id:"shuffle",name:"洗牌",type:"spell",cost:6,atk:0,hp:0,img:"img/shuffle.png",faction:"red",desc:"殺死對方一名將軍",flavor:"統統給我下去！"},
+  {id:"pikachu",name:"皮卡超",type:"general",cost:6,atk:4,hp:6,img:"img/pikachu.png",faction:"red",desc:"行刺長官：戰吼 — 隨機對一名友方單位造成3點傷害",flavor:"嫩嫩的，香香的"},
+  {id:"supermutant",name:"超級變種人",type:"unit",cost:7,atk:4,hp:9,img:"img/supermutant.png",faction:"red",desc:"",flavor:"當肺炎不再集中在肺部"},
+  {id:"j16",name:"殲-16",type:"vehicle",cost:8,atk:6,hp:9,img:"img/j16.png",faction:"red",desc:"自爆卡車：亡語 — 對同格敵方造成4傷害",flavor:"Make in China"},
+  {id:"tank",name:"戰車",type:"vehicle",cost:9,atk:5,hp:10,img:"img/tank.png",faction:"red",bcTarget:"enemy",desc:"攔路粉碎者：戰吼 — 指定一名單位造成5傷害，自損1生命(若目標是載具或建築則自損3)",flavor:"坦克不再開炮時"},
+  {id:"dongfeng",name:"東風導彈車",type:"vehicle",cost:10,atk:0,hp:8,img:"img/dongfeng.png",faction:"red",desc:"東風快遞：每回合結束隨機對3名敵方造成4傷",flavor:"全球包郵 全球覆蓋 零差評"},
+  {id:"destroyer052d",name:"052D型導彈驅逐艦",type:"vehicle",cost:11,atk:6,hp:12,img:"img/destroyer052d.png",faction:"red",bcTarget:"enemy",desc:"反艦飛彈：戰吼 — 轟炸指定一名敵方單位造成8傷害，若目標死亡則抽1張",flavor:"劈波斬浪，驅虎逐狼"},
+  {id:"lpd071",name:"071型綜合登陸艦",type:"vehicle",cost:12,atk:8,hp:12,img:"img/lpd071.png",faction:"red",desc:"最後攻勢：戰吼 — 立即投放3張解放軍卡牌；亡語 — 再投放3名解放軍",flavor:"登陸作戰"},
 ];
 const CARD_BY_ID=Object.fromEntries(CARD_POOL.map(c=>[c.id,c]));
-function buildDeck(){
-  const l=["steve","steve","pink","pink","hundred","hundred","monk","monk","shield","shield","city","city",
-           "gunner","gunner","pla","pla","police","police","mock","mock",
-           "goodcit","goodcit","redguard","redguard","mbase","mbase","green","green",
-           "berzerk","berzerk","terror","terror","purge","purge","command","command"];
+function buildDeck(faction){
+  const f=faction||"red";
+  const pool=CARD_POOL.filter(c=>c.faction===f);
+  let l=[];
+  // 費用越高放越少：低費多抽、高費稀有但不會絕版
+  pool.forEach(c=>{
+    let copies;
+    if(c.cost<=2)copies=3;        // 低費：常見
+    else if(c.cost<=5)copies=2;   // 中費：普通
+    else if(c.cost<=8)copies=1;   // 高費：稀有
+    else copies=1;                // 頂費：傳說（單張）
+    for(let k=0;k<copies;k++)l.push(c.id);
+  });
   for(let i=l.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[l[i],l[j]]=[l[j],l[i]];}
   return l;
 }
@@ -289,22 +342,23 @@ let _uid=0;
 function nextUid(){_uid++;return Date.now().toString(36)+"_"+_uid+"_"+Math.random().toString(36).slice(2,6);}
 
 // ============ 常數 ============
-const START_HP=30,START_HAND=4,MAX_ROUND=8,TURN_TIME=45,MAX_BOARD=8;
+const START_HP=30,START_HAND=5,MAX_ROUND=10,TURN_TIME=45,MAX_BOARD=6;
 const PEER_PREFIX="clcg-";
 const Net={peer:null,conn:null,role:null,mySlot:null};
 let gameState=null,timerId=null,timeLeft=TURN_TIME;
 let targeting=null; // {kind:"enemy"|"friendly", spellIdx}
-let selectedAttackerUid=null; // 手動攻擊選中的我方棋子
+let selectedAttackerUid=null;
+let placingHandIdx=null;
 
 function genCode(){
   const c="ABCDEFGHJKMNPQRSTUVWXYZ23456789";let s="";
   for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];
   return s;
 }
-function makePlayer(name){
-  const deck=buildDeck();
+function makePlayer(name,faction){
+  const deck=buildDeck(faction);
   const hand=deck.splice(0,5);
-  return {name,hp:START_HP,maxMana:1,mana:1,deck,hand,board:new Array(MAX_BOARD).fill(null),didPlay:false,bonusNextMana:0,confirmed:false,redraws:3};
+  return {name,faction:faction||"red",leader:"東哥",hp:START_HP,maxMana:1,mana:1,deck,hand,board:new Array(MAX_BOARD).fill(null),didPlay:false,bonusNextMana:0,confirmed:false,redraws:3,energyThisTurn:0};
 }
 
 // ============ 連線 ============
@@ -339,7 +393,8 @@ function joinRoom(code,n){
     const conn=peer.connect(PEER_PREFIX+code,{reliable:true});
     Net.conn=conn;
     conn.on("open",()=>{
-      conn.send({type:"hello",name:n});
+      const f=$("input-faction").value;
+      conn.send({type:"hello",name:n,faction:f});
       $("lobby-code").textContent=code;
       $("lobby-status").textContent="已連上，等待開局…";
     });
@@ -350,7 +405,7 @@ function joinRoom(code,n){
   peer.on("error",()=>toast("找不到這個房間"));
 }
 function handleHost(msg){
-  if(msg.type==="hello")startGame(msg.name);
+  if(msg.type==="hello")startGame(msg.name,msg.faction);
   else if(msg.type==="action"){applyAction(msg.action,"p2");broadcast();}
   else if(msg.type==="leave")showDisconnect();
 }
@@ -362,9 +417,10 @@ function handleGuest(msg){
     if(gameState.winner)setTimeout(showResult,1200);
   }
 }
-function startGame(opName){
+function startGame(opName,opFaction){
   const myName=$("input-name").value.trim()||"玩家 1";
-  const p1=makePlayer(myName),p2=makePlayer(opName);
+  const myFaction=$("input-faction").value||"red";
+  const p1=makePlayer(myName,myFaction),p2=makePlayer(opName,opFaction||"red");
   const first=Math.random()<0.5?"p1":"p2";
   gameState={p1,p2,turn:first,firstPlayer:first,round:1,winner:null,status:"mulligan",fx:[]};
   showScreen("game");broadcast();
@@ -374,7 +430,54 @@ function startGame(opName){
 function makeMinion(cardId){
   const c=CARD_BY_ID[cardId];
   return {uid:nextUid(),cardId,type:c.type,baseAtk:c.atk,atk:c.atk,hp:c.hp,maxHp:c.hp,
-          trait:c.trait||null,sick:c.trait==="charge"?false:true,attacked:false};
+          trait:c.trait||null,sick:c.trait==="charge"?false:true,attacked:false,shielded:false};
+}
+// 東哥技能：對友方單位造成傷害時獲得能量（每回合上限4）
+function gainEnergy(p,amount){
+  if(p.energyThisTurn>=4)return;
+  const gain=Math.min(amount,4-p.energyThisTurn);
+  p.energyThisTurn+=gain;
+  p.mana+=gain;
+}
+// 對 minion 造成傷害，會尊重護盾(passport)。回傳實際造成的傷害
+function dealToMinion(m,dmg){
+  if(!m)return 0;
+  if(m.shielded)return 0;
+  m.hp-=dmg;
+  return dmg;
+}
+// 找第一個空格（由中間往外）
+function findSlot(arr){for(const s of SLOT_MAP)if(!arr[s])return s;return -1;}
+// 召喚 n 隻解放軍
+function summonPLA(arr,n){
+  for(let i=0;i<n;i++){
+    const s=findSlot(arr);
+    if(s<0)break;
+    arr[s]=makeMinion("pla");
+  }
+}
+
+// ============ 亡語 ============
+function triggerDeathrattles(arr,idx,owner,enemy,fx){
+  const m=arr[idx];if(!m)return;
+  if(m.cardId==="j16"){
+    const e=enemy.board[idx];
+    if(e){dealToMinion(e,4);fx.push({type:"spell",pos:idx});}
+  }else if(m.cardId==="lpd071"){
+    summonPLA(owner.board,3);
+  }else if(m.cardId==="goodcit"){
+    const alive=enemy.board.filter(Boolean);
+    if(alive.length){dealToMinion(alive[Math.floor(Math.random()*alive.length)],3);}
+  }
+}
+// 清屍 + 觸發亡語
+function sweepDead(owner,enemy,fx){
+  for(let i=0;i<MAX_BOARD;i++){
+    if(owner.board[i]&&owner.board[i].hp<=0){
+      triggerDeathrattles(owner.board,i,owner,enemy,fx);
+      owner.board[i]=null;
+    }
+  }
 }
 
 // ============ 回合結束效果 ============
@@ -383,9 +486,10 @@ function roundEndEffects(){
   const fx=[];
   const pa=gameState.p1, pb=gameState.p2;
   const alive=arr=>arr.filter(x=>x);
+
   // 綠毒
-  a.forEach((m,i)=>{if(m&&m.cardId==="green")b.forEach((e,j)=>{if(e){e.hp-=1;fx.push({type:"spellDmg",pos:j});}});});
-  b.forEach((m,i)=>{if(m&&m.cardId==="green")a.forEach((e,j)=>{if(e){e.hp-=1;fx.push({type:"spellDmg",pos:j,side:"mine"});}});});
+  a.forEach((m,i)=>{if(m&&m.cardId==="green")b.forEach((e,j)=>{if(e){dealToMinion(e,1);fx.push({type:"spellDmg",pos:j});}});});
+  b.forEach((m,i)=>{if(m&&m.cardId==="green")a.forEach((e,j)=>{if(e){dealToMinion(e,1);fx.push({type:"spellDmg",pos:j,side:"mine"});}});});
   // 小粉紅
   a.forEach(m=>{if(m&&m.cardId==="pink"){m.hp+=1;m.maxHp+=1;}});
   b.forEach(m=>{if(m&&m.cardId==="pink"){m.hp+=1;m.maxHp+=1;}});
@@ -393,48 +497,85 @@ function roundEndEffects(){
   a.forEach(m=>{if(m&&m.cardId==="city"&&pa.hand.length<10)pa.hand.push("leek");});
   b.forEach(m=>{if(m&&m.cardId==="city"&&pb.hand.length<10)pb.hand.push("leek");});
   // 軍事基地：生產解放軍
-  const findSlot=arr=>{for(const s of SLOT_MAP)if(!arr[s])return s;return -1;};
   a.forEach(m=>{if(m&&m.cardId==="mbase"){const cnt=alive(a).filter(x=>x.cardId==="pla").length;if(cnt<2){const s=findSlot(a);if(s>=0)a[s]=makeMinion("pla");}}});
   b.forEach(m=>{if(m&&m.cardId==="mbase"){const cnt=alive(b).filter(x=>x.cardId==="pla").length;if(cnt<2){const s=findSlot(b);if(s>=0)b[s]=makeMinion("pla");}}});
   // 曾鈺成：隨機打友方2傷
-  a.forEach(m=>{if(m&&m.cardId==="jas"){const fr=alive(a).filter(x=>x.uid!==m.uid);if(fr.length)fr[Math.floor(Math.random()*fr.length)].hp-=2;}});
-  b.forEach(m=>{if(m&&m.cardId==="jas"){const fr=alive(b).filter(x=>x.uid!==m.uid);if(fr.length)fr[Math.floor(Math.random()*fr.length)].hp-=2;}});
+  a.forEach(m=>{if(m&&m.cardId==="jas"){const fr=alive(a).filter(x=>x.uid!==m.uid);if(fr.length){dealToMinion(fr[Math.floor(Math.random()*fr.length)],2);gainEnergy(pa,1);}}});
+  b.forEach(m=>{if(m&&m.cardId==="jas"){const fr=alive(b).filter(x=>x.uid!==m.uid);if(fr.length){dealToMinion(fr[Math.floor(Math.random()*fr.length)],2);gainEnergy(pb,1);}}});
+  // 東風導彈車：隨機3名敵方各4傷
+  a.forEach(m=>{if(m&&m.cardId==="dongfeng"){
+    const targets=b.filter(Boolean);
+    for(let k=0;k<3;k++){
+      if(targets.length){const t=targets.splice(Math.floor(Math.random()*targets.length),1)[0];dealToMinion(t,4);fx.push({type:"spell",pos:b.indexOf(t)});}
+      else pb.hp-=4;
+    }
+  }});
+  b.forEach(m=>{if(m&&m.cardId==="dongfeng"){
+    const targets=a.filter(Boolean);
+    for(let k=0;k<3;k++){
+      if(targets.length){const t=targets.splice(Math.floor(Math.random()*targets.length),1)[0];dealToMinion(t,4);fx.push({type:"spell",pos:a.indexOf(t),side:"mine"});}
+      else pa.hp-=4;
+    }
+  }});
+
   // 回合末自動互打：牌對牌，對面沒卡且對方沒防線才打首領
-  const autoFight=(my,en,myHero,enHero,mySlot,enSlot)=>{
-    for(let i=0;i<MAX_BOARD;i++){
-      const m=my[i];
-      if(!m||m.trait==="guard"||m.sick)continue;
-      const e=en[i];
-      const enTaunts=alive(en).filter(x=>x.trait==="taunt");
-      if(e){
-        const ma=effAtk(m,alive(my)),ea=effAtk(e,alive(en));
-        const mCharge=m.trait==="charge", eCharge=e.trait==="charge";
-        if(mCharge&&!eCharge){
-          e.hp-=ma;
-          if(e.hp>0)m.hp-=ea;
-        }else if(eCharge&&!mCharge){
-          m.hp-=ea;
-          if(m.hp>0)e.hp-=ma;
-        }else{
-          e.hp-=ma;m.hp-=ea;
-        }
-        fx.push({type:"clash",pos:i});
-      }else if(enTaunts.length>0){
-        // 對面沒卡但有防線，去打防線
-        const t=enTaunts[0];
-        t.hp-=effAtk(m,alive(my));
-        const hitPos=en.indexOf(t);
-        fx.push({type:"hit",pos:hitPos,side:en===b?"enemy":"mine",dmg:effAtk(m,alive(my))});
+  // 單次走過所有格位，避免雙重互打；死怪不攻擊也不還手
+  for(let i=0;i<MAX_BOARD;i++){
+    const ma=a[i], mb=b[i];
+    // 死怪跳過
+    if(ma&&ma.hp<=0)continue;
+    if(mb&&mb.hp<=0)continue;
+
+    if(ma&&mb){
+      // 同格兩邊都有怪：互打
+      if(ma.trait==="guard"||mb.trait==="guard")continue; // 協防不主動攻
+      const atkA=effAtk(ma,alive(a)), atkB=effAtk(mb,alive(b));
+      const aCharge=ma.trait==="charge", bCharge=mb.trait==="charge";
+      if(aCharge&&!bCharge){
+        // 我方先攻，對方没死才還手
+        dealToMinion(mb,atkA);
+        if(mb.hp>0)dealToMinion(ma,atkB);
+      }else if(bCharge&&!aCharge){
+        // 對方先攻，我方没死才還手
+        dealToMinion(ma,atkB);
+        if(ma.hp>0)dealToMinion(mb,atkA);
       }else{
-        enHero.hp-=effAtk(m,alive(my));
-        fx.push({type:"hitHero",slot:enSlot,dmg:effAtk(m,alive(my))});
+        // 同時互打
+        dealToMinion(mb,atkA);
+        dealToMinion(ma,atkB);
+      }
+      fx.push({type:"clash",pos:i});
+    }else if(ma&&!mb){
+      // 我方有怪、對面空格：打對方防線或首領
+      if(ma.trait==="guard")continue;
+      const bTaunts=alive(b).filter(x=>x.trait==="taunt");
+      if(bTaunts.length>0){
+        const t=bTaunts[0];
+        dealToMinion(t,effAtk(ma,alive(a)));
+        fx.push({type:"hit",pos:b.indexOf(t),side:"enemy",dmg:effAtk(ma,alive(a))});
+      }else{
+        pb.hp-=effAtk(ma,alive(a));
+        fx.push({type:"hitHero",slot:"p2",dmg:effAtk(ma,alive(a))});
+      }
+    }else if(mb&&!ma){
+      // 對方有怪、我方空格：打我方防線或首領
+      if(mb.trait==="guard")continue;
+      const aTaunts=alive(a).filter(x=>x.trait==="taunt");
+      if(aTaunts.length>0){
+        const t=aTaunts[0];
+        dealToMinion(t,effAtk(mb,alive(b)));
+        fx.push({type:"hit",pos:a.indexOf(t),side:"mine",dmg:effAtk(mb,alive(b))});
+      }else{
+        pa.hp-=effAtk(mb,alive(b));
+        fx.push({type:"hitHero",slot:"p1",dmg:effAtk(mb,alive(b))});
       }
     }
-  };
-  autoFight(a,b,pa,pb,"p1","p2");
-  autoFight(b,a,pb,pa,"p2","p1");
-  // 清屍（保留空位）
-  for(let i=0;i<MAX_BOARD;i++){if(a[i]&&a[i].hp<=0)a[i]=null;if(b[i]&&b[i].hp<=0)b[i]=null;}
+  }
+
+  // 清屍 + 亡語
+  sweepDead(pa,pb,fx);
+  sweepDead(pb,pa,fx);
+
   if(pa.hp<=0){pa.hp=0;gameState.winner="p2";gameState.status="finished";}
   if(pb.hp<=0){pb.hp=0;gameState.winner="p1";gameState.status="finished";}
   gameState.fx=(gameState.fx||[]).concat(fx);
@@ -477,55 +618,115 @@ function applyAction(act,senderSlot){
     me.mana-=card.cost;
     me.didPlay=true;
     if(card.type==="spell"){
-      const findSlot=arr=>{for(const s of SLOT_MAP)if(!arr[s])return s;return -1;};
       if(card.id==="shield"){
         const t=me.board.find(m=>m&&m.uid===act.targetUid);
         if(t){t.trait="taunt";gameState.fx.push({type:"buff",pos:me.board.indexOf(t)});}
       }else if(card.id==="police"){
         const t=op.board.find(m=>m&&m.uid===act.targetUid);
         if(!t)return;
-        t.hp-=2;gameState.fx.push({type:"spell",pos:op.board.indexOf(t)});
+        dealToMinion(t,2);gameState.fx.push({type:"spell",pos:op.board.indexOf(t)});
         if(t.hp<=0){op.board[op.board.indexOf(t)]=null;if(me.deck.length>0)me.hand.push(me.deck.shift());}
       }else if(card.id==="terror"){
-        op.board.forEach((m,i)=>{if(m&&m.type==="building"){m.hp-=3;gameState.fx.push({type:"spell",pos:i});}});
-        for(let i=0;i<MAX_BOARD;i++)if(op.board[i]&&op.board[i].hp<=0)op.board[i]=null;
+        op.board.forEach((m,i)=>{if(m&&m.type==="building"){dealToMinion(m,3);gameState.fx.push({type:"spell",pos:i});}});
+        sweepDead(op,me,gameState.fx);
       }else if(card.id==="hundred"){
-        me.board.forEach(m=>{if(m)m.hp-=1;});
-        for(let i=0;i<MAX_BOARD;i++)if(me.board[i]&&me.board[i].hp<=0)me.board[i]=null;
+        const aliveCount=me.board.filter(Boolean).length;
+        me.board.forEach(m=>{if(m)dealToMinion(m,1);});
+        sweepDead(me,op,gameState.fx);
+        gainEnergy(me,aliveCount);
       }else if(card.id==="mock"){
-        const t=op.board.find(m=>m&&m.uid===act.targetUid);
+        const t=op.board.find(m=>m&&m.uid===act.targetUid&&m.type==="general");
         if(!t)return;
-        t.hp-=5;
+        dealToMinion(t,5);
         gameState.fx.push({type:"spell",pos:op.board.indexOf(t)});
         if(t.hp<=0)op.board[op.board.indexOf(t)]=null;
         if(me.deck.length>0)me.hand.push(me.deck.shift());
       }else if(card.id==="free"){
-        const pool=CARD_POOL.filter(c=>c.cost<=4&&c.type!=="spell");
+        const pool=CARD_POOL.filter(c=>c.cost<=4&&c.type!=="spell"&&c.faction===me.faction);
         for(let i=0;i<2;i++){me.hand.push(pool[Math.floor(Math.random()*pool.length)].id);}
       }else if(card.id==="famine"){
         op.board.forEach(m=>{if(m&&m.type!=="vehicle")m.hp=1;});
       }else if(card.id==="purge"){
-        op.board.forEach((m,i)=>{if(m){m.hp-=3;gameState.fx.push({type:"spell",pos:i});}});
-        for(let i=0;i<MAX_BOARD;i++)if(op.board[i]&&op.board[i].hp<=0)op.board[i]=null;
+        op.board.forEach((m,i)=>{if(m){dealToMinion(m,3);gameState.fx.push({type:"spell",pos:i});}});
+        sweepDead(op,me,gameState.fx);
       }else if(card.id==="command"){
         const t=me.board.find(m=>m&&m.uid===act.targetUid);
         if(t){t.baseAtk+=2;t.hp+=2;t.maxHp+=2;gameState.fx.push({type:"buff",pos:me.board.indexOf(t)});}
       }
+      // === 新法術 ===
+      else if(card.id==="passport"){
+        const t=me.board.find(m=>m&&m.uid===act.targetUid);
+        if(t){t.shielded=true;gameState.fx.push({type:"buff",pos:me.board.indexOf(t)});}
+      }else if(card.id==="burnboats"){
+        for(let i=0;i<3;i++){if(me.deck.length>0)me.hand.push(me.deck.shift());}
+      }else if(card.id==="divineshine"){
+        for(let i=0;i<2;i++){
+          const targets=op.board.filter(Boolean);
+          if(!targets.length)break;
+          const t=targets[Math.floor(Math.random()*targets.length)];
+          t.hp=0;
+          gameState.fx.push({type:"spell",pos:op.board.indexOf(t)});
+        }
+        sweepDead(op,me,gameState.fx);
+        for(let i=0;i<2;i++){if(me.deck.length>0)me.hand.push(me.deck.shift());}
+      }else if(card.id==="shuffle"){
+        const t=op.board.find(m=>m&&m.uid===act.targetUid&&m.type==="general");
+        if(!t)return;
+        t.hp=0;
+        gameState.fx.push({type:"spell",pos:op.board.indexOf(t)});
+        sweepDead(op,me,gameState.fx);
+      }
     }else{
-      // 找第一個空格（從中間往外）
-      let pos=-1;
-      for(const s of SLOT_MAP){if(!me.board[s]){pos=s;break;}}
+      // 隨從 / 載具 / 建築 / 將軍
+      let pos=act.pos;
+      if(pos===undefined||me.board[pos]){pos=findSlot(me.board);}
       if(pos<0){toast("場上滿了");return;}
       const m=makeMinion(cid);
       me.board[pos]=m;
+      gameState.fx.push({type:"place",pos});
       // 破戒僧戰吼：立即打對面位置的怪
       if(cid==="monk"){
         const en=op.board[pos];
         if(en&&en.hp>0){
-          en.hp-=m.atk;
+          dealToMinion(en,m.atk);
           gameState.fx.push({type:"battlecry",pos});
-          if(en.hp<=0)op.board[pos]=null;
+          if(en.hp<=0){sweepDead(op,me,gameState.fx);}
         }
+      }
+      // === 新戰吼 ===
+      else if(cid==="pikachu"){
+        // 隨機打一隻友方（不含自己）
+        const allies=me.board.filter(x=>x&&x.uid!==m.uid);
+        if(allies.length){
+          const t=allies[Math.floor(Math.random()*allies.length)];
+          dealToMinion(t,3);
+          gainEnergy(me,1);
+          gameState.fx.push({type:"buff",pos:me.board.indexOf(t)});
+        }
+        sweepDead(me,op,gameState.fx);
+      }
+      else if(cid==="tank"){
+        const t=op.board.find(x=>x&&x.uid===act.targetUid);
+        if(t){
+          dealToMinion(t,5);
+          gameState.fx.push({type:"spell",pos:op.board.indexOf(t)});
+          const selfDmg=(t.type==="vehicle"||t.type==="building")?3:1;
+          dealToMinion(m,selfDmg);
+        }
+        sweepDead(op,me,gameState.fx);
+        sweepDead(me,op,gameState.fx);
+      }
+      else if(cid==="destroyer052d"){
+        const t=op.board.find(x=>x&&x.uid===act.targetUid);
+        if(t){
+          dealToMinion(t,8);
+          gameState.fx.push({type:"spell",pos:op.board.indexOf(t)});
+          if(t.hp<=0&&me.deck.length>0)me.hand.push(me.deck.shift());
+        }
+        sweepDead(op,me,gameState.fx);
+      }
+      else if(cid==="lpd071"){
+        summonPLA(me.board,3);
       }
     }
   }
@@ -543,18 +744,15 @@ function applyAction(act,senderSlot){
       if(!target)return;
       if(opTaunts.length>0&&target.trait!=="taunt")return;
       const tPos=op.board.indexOf(target);
-      target.hp-=myAtk;
+      dealToMinion(target,myAtk);
       gameState.fx.push({type:"hit",pos:tPos,side:"enemy",dmg:myAtk});
-      if(target.hp>0){atk.hp-=effAtk(target,op.board.filter(Boolean));}
+      if(target.hp>0)dealToMinion(atk,effAtk(target,op.board.filter(Boolean)));
       if(target.hp<=0){
         if(target.type==="vehicle"&&atk.type==="vehicle")me.bonusNextMana=1;
         if(atk.cardId==="gunner")atk.baseAtk+=1;
-        op.board[tPos]=null;
       }
-      if(atk.hp<=0){
-        const aPos=me.board.indexOf(atk);
-        me.board[aPos]=null;
-      }
+      sweepDead(op,me,gameState.fx);
+      sweepDead(me,op,gameState.fx);
     }
     atk.attacked=true;
     if(me.hp<=0){me.hp=0;gameState.winner=cur==="p1"?"p2":"p1";gameState.status="finished";}
@@ -562,28 +760,32 @@ function applyAction(act,senderSlot){
   else if(act.type==="endTurn"){
     if(!me.didPlay && me.deck.length>0)me.hand.push(me.deck.shift());
     me.didPlay=false;
+    // 清除護盾(passport)
+    me.board.forEach(m=>{if(m)m.shielded=false;});
     const next=cur==="p1"?"p2":"p1";
     if(next===gameState.firstPlayer){roundEndEffects();gameState.round++;}
     gameState.turn=next;
     const np=gameState[next];
     let bonus=np.bonusNextMana||0; np.bonusNextMana=0;
-    np.maxMana=Math.min(gameState.round+bonus,MAX_ROUND);
+    const cap=np.hp<10?6:10; // 費用硬上限 10，bonus 也不能推超
+    np.maxMana=Math.min(gameState.round+bonus,cap,10);
     np.mana=np.maxMana;
+    np.energyThisTurn=0;
     np.board.forEach(m=>{if(m){m.sick=false;m.attacked=false;}});
   }
 }
-function doPlayCard(handIdx,targetUid){
+function doPlayCard(handIdx,targetUid,pos){
   if(!isMyTurn()){toast("還不是你的回合");return;}
   const me=gameState[Net.mySlot],cid=me.hand[handIdx],card=CARD_BY_ID[cid];
   if(!card)return;
   if(me.mana<card.cost){toast("費用不足");return;}
-  if(card.type!=="spell"){
-    const hasEmpty=me.board.some(x=>!x);
-    if(!hasEmpty){toast("場上滿了");return;}
+  if(card.type!=="spell"&&!card.bcTarget){
+    if(pos===undefined&&!me.board.some(x=>!x)){toast("場上滿了");return;}
+    if(pos!==undefined&&me.board[pos]){toast("該格已有卡");return;}
   }
-  if(Net.role==="host"){applyAction({type:"play",index:handIdx,targetUid});broadcast();}
-  else Net.conn.send({type:"action",action:{type:"play",index:handIdx,targetUid}});
-  targeting=null;
+  if(Net.role==="host"){applyAction({type:"play",index:handIdx,targetUid,pos});broadcast();}
+  else Net.conn.send({type:"action",action:{type:"play",index:handIdx,targetUid,pos}});
+  targeting=null;placingHandIdx=null;
 }
 function doEnd(){
   if(!isMyTurn())return;
@@ -598,7 +800,8 @@ function doRedraw(i){sendAction({type:"redraw",index:i});}
 function doConfirm(){sendAction({type:"confirm"});}
 function broadcast(){
   if(Net.conn&&Net.role==="host")Net.conn.send({type:"state",state:gameState});
-  render();if(gameState.winner)setTimeout(showResult,1200);
+  render();playFXRing();
+  if(gameState.winner)setTimeout(showResult,1200);
 }
 function showDisconnect(){toast("對手已離線");setTimeout(quit,1500);}
 function quit(){
@@ -639,13 +842,64 @@ $("btn-leave-lobby").onclick=quit;
 $("btn-end-turn").onclick=doEnd;
 $("btn-back-home").onclick=quit;
 $("mul-start").onclick=doConfirm;
+$("btn-gallery").onclick=()=>{
+  const g=$("gallery-grid");g.innerHTML="";
+  // 第一層：陣營；第二層：類型；每類依費用排序
+  const factions=[
+    {key:"red",label:"🚩 共產黨",color:"#ff5252"},
+    {key:"white",label:"⚪ 中立",color:"#fff"},
+    {key:"purple",label:"🟣 紫",color:"#b388ff"},
+    {key:"gray",label:"⚙️ 灰",color:"#9e9e9e"},
+  ];
+  const typeOrder=[
+    {key:"spell",label:"法術"},
+    {key:"unit",label:"隨從"},
+    {key:"vehicle",label:"載具"},
+    {key:"building",label:"建築"},
+    {key:"general",label:"將軍"},
+  ];
+  factions.forEach(fc=>{
+    const fcCards=CARD_POOL.filter(c=>c.faction===fc.key);
+    if(!fcCards.length)return;
+    // 陣營標題
+    const fh=document.createElement("div");
+    fh.style.cssText=`width:100%;font-size:22px;font-weight:800;margin:24px 0 10px;padding:8px 12px;border-left:6px solid ${fc.color};background:rgba(255,255,255,.08);color:${fc.color};text-shadow:0 0 8px ${fc.color}55`;
+    fh.textContent=`${fc.label}（${fcCards.length} 張）`;
+    g.appendChild(fh);
+    // 該陣營內依類型分組
+    typeOrder.forEach(tp=>{
+      const cards=fcCards.filter(c=>c.type===tp.key).sort((a,b)=>a.cost-b.cost);
+      if(!cards.length)return;
+      const th=document.createElement("div");
+      th.style.cssText="width:100%;color:#ffd966;font-size:15px;font-weight:700;margin:12px 0 6px;padding:4px 10px;border-left:3px solid #ffd966;background:rgba(255,217,102,.08)";
+      th.textContent=`${tp.label}（${cards.length}）`;
+      g.appendChild(th);
+      cards.forEach(c=>{
+        const el=document.createElement("div");
+        el.className="card f-"+c.faction;
+        el.style.cssText+=";transform:scale(.85);margin:-10px";
+        el.innerHTML=`<img class="cimg" src="${c.img}" />
+          <div class="cbody"><div class="cname">${c.name}</div>
+          <div class="cdesc" style="font-size:10px;line-height:1.25">${c.desc||""}</div></div>
+          <div class="cstatbar">
+            <div class="cost"><span class="val">${c.cost}</span></div>
+            ${c.atk?`<div class="dmg"><span class="val">${c.atk}</span></div>`:""}
+            ${c.hp?`<div class="hp"><span class="val">${c.hp}</span></div>`:""}
+          </div>`;
+        g.appendChild(el);
+      });
+    });
+  });
+  $("modal-gallery").style.display="block";
+};
+$("btn-leaderboard").onclick=()=>{$("modal-board").style.display="flex";};
 
 function render(){
   if(!gameState)return;
   const me=myData(),op=opData();
   if(!me||!op)return;
-  $("my-name").textContent=me.name;
-  $("op-name").textContent=op.name||"對手";
+  $("my-name").textContent=me.leader||"東哥";
+  $("op-name").textContent=(op.leader||"東哥")+"（"+(op.name||"對手")+"）";
   $("my-hp").textContent=Math.max(0,me.hp);
   $("op-hp").textContent=Math.max(0,op.hp);
   $("my-mana").textContent=`${me.mana}/${me.maxMana}`;
@@ -703,7 +957,7 @@ function renderMulHand(me){
     c.appendChild(el);
   });
 }
-const SLOT_MAP=[3,4,2,5,1,6,0,7];
+const SLOT_MAP=[2,3,1,4,0,5];
 function renderBoard(c,board,isEnemy){
   c.innerHTML="";
   const opTaunts=opData()?opData().board.filter(m=>m&&m.trait==="taunt"):[];
@@ -711,12 +965,20 @@ function renderBoard(c,board,isEnemy){
     const m=board[slotIdx];
     const slot=document.createElement("div");
     slot.className="slot";
-    if(!m){c.appendChild(slot);continue;}
+    if(!m){
+      if(!isEnemy&&placingHandIdx!=null&&isMyTurn()){
+        slot.classList.add("slot-targetable");
+        slot.onclick=()=>{if(placingHandIdx!=null)doPlayCard(placingHandIdx,null,slotIdx);};
+      }
+      c.appendChild(slot);continue;
+    }
     const card=CARD_BY_ID[m.cardId],el=document.createElement("div");
     el.className="minion f-"+card.faction;
     if(m.trait==="taunt")el.classList.add("taunt");
     if(m.trait==="guard")el.classList.add("guard");
+    if(m.shielded)el.classList.add("shielded");
     if(m.sick||m.attacked)el.style.boxShadow="inset 0 0 0 2px #444";
+    if(m.shielded)el.style.boxShadow="inset 0 0 0 2px #6cf";
     if(isEnemy&&targeting&&targeting.kind==="enemy"&&isMyTurn())el.classList.add("targetable");
     if(!isEnemy&&targeting&&targeting.kind==="friendly"&&isMyTurn())el.classList.add("friendly-targetable");
     if(!isEnemy&&selectedAttackerUid===m.uid&&isMyTurn())el.classList.add("selected-spell");
@@ -726,12 +988,13 @@ function renderBoard(c,board,isEnemy){
     }
     const traitIcon=m.trait==="taunt"?"🛡":(m.trait==="guard"?"◈":(m.trait==="charge"?"⚡":""));
     const dispAtk=effAtk(m,board.filter(Boolean));
+    const typeLabel=card.type==="vehicle"?"載具":card.type==="building"?"建築":card.type==="general"?"將軍":"";
     el.innerHTML=`
       ${traitIcon?`<div class="traits">${traitIcon}</div>`:""}
       <img class="mimg" src="${card.img}" />
       <div class="mbox">
         <div class="mname">${card.name}</div>
-        <div class="mtype">${card.type==="vehicle"?"載具":card.type==="building"?"建築":card.type==="general"?"將軍":""}</div>
+        <div class="mtype">${typeLabel}</div>
         <div class="mstats"><span class="a">⚔${dispAtk}</span><span class="h">❤️${m.hp}</span></div>
       </div>`;
     el.onclick=()=>onMinionClick(m.uid,isEnemy);
@@ -744,19 +1007,20 @@ function renderHand(me){
   me.hand.forEach((cid,i)=>{
     const card=CARD_BY_ID[cid],el=document.createElement("div");
     el.className="card f-"+card.faction;
-    if(me.mana<card.cost||!isMyTurn()||(card.type!=="spell"&&!me.board.some(x=>!x)))el.classList.add("unplayable");
+    if(me.mana<card.cost||!isMyTurn()||(card.type!=="spell"&&!card.bcTarget&&!me.board.some(x=>!x)))el.classList.add("unplayable");
     if(targeting&&targeting.spellIdx===i)el.classList.add("selected-spell");
     let statsHTML="";
-    if(card.type==="unit"||card.type==="vehicle"||card.type==="building"){
+    if(card.type==="unit"||card.type==="vehicle"||card.type==="building"||card.type==="general"){
       statsHTML=`
         <div class="dmg"><span class="lbl">傷害</span><span class="val">${card.atk}</span></div>
         <div class="cost"><span class="lbl">費用</span><span class="val">${card.cost}</span></div>
         <div class="hp"><span class="lbl">生命</span><span class="val">${card.hp}</span></div>`;
     }else{
+      const effLabel=card.id==="terror"?"全建築":card.id==="passport"?"選友軍":card.id==="shuffle"?"選將軍":card.id==="divineshine"?"隨機2":card.id==="burnboats"?"抽3":(card.id==="shield"||card.id==="command"||card.id==="mock")?(card.id==="mock"?"選將軍":"選友軍"):(card.id==="police"?"選敵":card.id==="purge"?"全敵方":card.id==="famine"?"非載具":card.id==="free"?"發現":card.id==="hundred"?"全場":"選敵");
       statsHTML=`
-        <div class="dmg"><span class="lbl">類型</span><span class="val" style="font-size:10px">法術</span></div>
+        <div class="dmg"><span class="lbl">類型</span><span class="val" style="font-size:12px">法術</span></div>
         <div class="cost"><span class="lbl">費用</span><span class="val">${card.cost}</span></div>
-        <div class="hp"><span class="lbl">效果</span><span class="val" style="font-size:10px">${card.id==="terror"?"全建築":card.id==="shield"?"選友軍":"選敵"}</span></div>`;
+        <div class="hp"><span class="lbl">效果</span><span class="val" style="font-size:11px">${effLabel}</span></div>`;
     }
     el.innerHTML=`
       <img class="cimg" src="${card.img}" />
@@ -779,13 +1043,30 @@ function onCardClick(i){
   const me=gameState[Net.mySlot],cid=me.hand[i],card=CARD_BY_ID[cid];
   if(!card)return;
   if(me.mana<card.cost){toast("費用不足");return;}
-  if(card.type!=="spell"){doPlayCard(i);return;}
-  const noTarget=["terror","hundred","free","famine","purge"];
+  // 帶戰吼目標的隨從
+  if(card.type!=="spell"&&card.bcTarget){
+    if(card.bcTarget==="enemy"&&!opData().board.some(Boolean)){toast("對方場上沒怪");return;}
+    if(card.bcTarget==="friendly"&&!me.board.some(Boolean)){toast("場上沒友軍");return;}
+    if(targeting&&targeting.spellIdx===i){targeting=null;render();return;}
+    targeting={kind:card.bcTarget,spellIdx:i};
+    toast(card.bcTarget==="friendly"?"點要選的友方":"點要打的敵方");
+    render();return;
+  }
+  if(card.type!=="spell"){
+    if(!me.board.some(x=>!x)){toast("場上滿了，直接出");doPlayCard(i);return;}
+    placingHandIdx=(placingHandIdx===i)?null:i;
+    toast(placingHandIdx!=null?"點你要放置的空格位":"");
+    render();return;
+  }
+  // 法術
+  const noTarget=["terror","hundred","free","famine","purge","burnboats","divineshine"];
   if(noTarget.includes(card.id)){doPlayCard(i);return;}
-  const needFriendly=(card.id==="shield"||card.id==="command");
+  const needFriendly=(card.id==="shield"||card.id==="command"||card.id==="passport");
   if(targeting&&targeting.spellIdx===i){targeting=null;render();return;}
   const board=needFriendly?me.board:opData().board;
-  if(!board.some(Boolean)){toast(needFriendly?"場上沒友軍":"對方場上沒怪");return;}
+  if(card.id==="mock"||card.id==="shuffle"){
+    if(!opData().board.some(m=>m&&m.type==="general")){toast("對方場上沒有將軍");return;}
+  }else if(!board.some(Boolean)){toast(needFriendly?"場上沒友軍":"對方場上沒怪");return;}
   targeting={kind:needFriendly?"friendly":"enemy",spellIdx:i};
   toast(needFriendly?"點要選的友方":"點要打的敵方");
   render();
@@ -807,28 +1088,33 @@ function playFXRing(){
       const eIn=pos=>$("op-board").children[pos];
       if(fx.type==="clash"){
         const m=mIn(fx.pos),o=eIn(fx.pos);
-        if(m){m.classList.add("attacking");floatDmg(m,"💥");}
-        if(o){o.classList.add("attacking-down");floatDmg(o,"💥");}
+        if(m){m.classList.add("attacking");floatDmg(m,"💥");shake(m);}
+        if(o){o.classList.add("attacking-down");floatDmg(o,"💥");shake(o);}
+        if(m||o)document.body.classList.add("hit-shake");
+        setTimeout(()=>document.body.classList.remove("hit-shake"),300);
       }else if(fx.type==="hit"){
         const sel=fx.side==="mine"?mIn:eIn;
         const el=sel(fx.pos);
-        if(el){el.style.boxShadow="0 0 16px #f66";floatDmg(el,fx.dmg+"!");setTimeout(()=>el.style.boxShadow="",500);}
+        if(el){el.style.boxShadow="0 0 20px #f66";floatDmg(el,fx.dmg+"!");shake(el);setTimeout(()=>el.style.boxShadow="",500);}
       }else if(fx.type==="hitHero"){
         const sel=fx.slot==="p1"?$("my-hero-corner"):$("op-hero");
-        if(sel){sel.style.boxShadow="0 0 20px #f66";setTimeout(()=>sel.style.boxShadow="",500);}
+        if(sel){sel.style.boxShadow="0 0 24px #f66";setTimeout(()=>sel.style.boxShadow="",500);}
+        document.body.classList.add("hit-shake");
+        setTimeout(()=>document.body.classList.remove("hit-shake"),300);
         toast(fx.slot==="p1"?"你被打了 "+fx.dmg+"!":"對方被打了 "+fx.dmg+"!");
       }else if(fx.type==="spell"){
-        const el=eIn(fx.pos);
-        if(el){el.style.boxShadow="0 0 20px #ff0";floatDmg(el,"2!");setTimeout(()=>el.style.boxShadow="",500);}
+        const sel=fx.side==="mine"?mIn:eIn;
+        const el=sel(fx.pos);
+        if(el){el.style.boxShadow="0 0 24px #ff0";floatDmg(el,"💥");shake(el);setTimeout(()=>el.style.boxShadow="",500);}
       }else if(fx.type==="battlecry"){
         const el=eIn(fx.pos);
-        if(el){el.style.boxShadow="0 0 20px #f66";floatDmg(el,"1!");setTimeout(()=>el.style.boxShadow="",500);}
+        if(el){el.style.boxShadow="0 0 24px #f66";floatDmg(el,"1!");shake(el);setTimeout(()=>el.style.boxShadow="",500);}
       }else if(fx.type==="spellDmg"){
         const el=fx.side==="mine"?mIn(fx.pos):eIn(fx.pos);
         if(el){floatDmg(el,"1");}
       }else if(fx.type==="buff"){
         const el=mIn(fx.pos);
-        if(el){el.style.boxShadow="0 0 20px #ff9800";setTimeout(()=>el.style.boxShadow="",500);}
+        if(el){el.style.boxShadow="0 0 24px #ff9800";setTimeout(()=>el.style.boxShadow="",500);}
       }
     },idx*350);
   });
@@ -836,6 +1122,11 @@ function playFXRing(){
 function floatDmg(el,text){
   const d=document.createElement("div");d.className="dmg-float";d.textContent=text;
   el.appendChild(d);setTimeout(()=>d.remove(),800);
+}
+function shake(el){
+  if(!el)return;
+  el.classList.add("shake");
+  setTimeout(()=>el.classList.remove("shake"),300);
 }
 function showResult(){
   const win=gameState.winner===Net.mySlot;
