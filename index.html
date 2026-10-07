@@ -176,7 +176,7 @@ body.hit-shake{animation:shake .3s}
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDgrZyTtxngtksFOpGq7OQK2cS8pqGJqCc",
@@ -192,7 +192,7 @@ body.hit-shake{animation:shake .3s}
   try{analytics=getAnalytics(app);}catch(e){}
   const auth = getAuth(app);
   const db = getFirestore(app);
-  window.firebase = { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, doc, setDoc, getDoc, updateDoc, onSnapshot, analytics };
+  window.firebase = { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, orderBy, limit, getDocs, analytics };
   // 等 DOM 準備好後通知遊戲
   window.dispatchEvent(new Event("firebase-ready"));
 </script>
@@ -201,10 +201,19 @@ body.hit-shake{animation:shake .3s}
   <!-- 右上角：遊戲標題 + 可編輯玩家名 -->
   <div id="home-topbar" style="position:fixed;top:0;right:0;left:0;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;z-index:20;background:linear-gradient(180deg,rgba(0,0,0,.85),transparent)">
     <div style="color:#ffd966;font-weight:800;font-size:14px;letter-spacing:1px">⚔️ CL CARD GAME</div>
-    <div id="home-name-wrap" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15)">
-      <span style="color:#aaa;font-size:11px" id="home-name-label-tag">來客</span>
-      <span id="home-name-label" style="color:#fff;font-size:13px;font-weight:bold">點我登入</span>
-      <span style="color:#ffd966;font-size:11px">👤</span>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="home-name-label" style="color:#fff;font-size:14px;font-weight:bold;cursor:pointer">點我登入</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span id="home-edit-name" style="color:#888;font-size:10px;cursor:pointer;text-decoration:underline">✏️ 改名字</span>
+        <span style="color:#555;font-size:10px">|</span>
+        <span style="color:#888;font-size:10px">陣營:</span>
+        <button class="faction-dot" data-faction="red" title="共產黨" style="width:12px;height:12px;border-radius:50%;background:#ff5252;border:2px solid transparent;cursor:pointer;padding:0"></button>
+        <button class="faction-dot" data-faction="white" title="白卡" style="width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid transparent;cursor:pointer;padding:0"></button>
+        <button class="faction-dot" data-faction="abyss" title="深淵" style="width:12px;height:12px;border-radius:50%;background:#b388ff;border:2px solid transparent;cursor:pointer;padding:0"></button>
+        <button class="faction-dot" data-faction="mech" title="機械" style="width:12px;height:12px;border-radius:50%;background:#9e9e9e;border:2px solid transparent;cursor:pointer;padding:0"></button>
+      </div>
     </div>
   </div>
   <div class="home-card" style="margin-top:50px">
@@ -326,10 +335,11 @@ body.hit-shake{animation:shake .3s}
   </div>
 </div>
 
-<div id="modal-board" style="position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;display:none;align-items:center;justify-content:center">
-  <div style="background:#111;padding:30px;border-radius:12px;max-width:400px;width:90%;color:#fff">
+<div id="modal-board" style="position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;display:none;align-items:center;justify-content:center;overflow-y:auto;padding:20px">
+  <div style="background:#111;padding:30px;border-radius:12px;max-width:500px;width:100%;color:#fff;max-height:90vh;overflow-y:auto">
     <h2 style="text-align:center;margin-bottom:16px">🏆 排行榜</h2>
-    <p style="text-align:center;color:#aaa">目前還沒有數據，打完一場就上榜！</p>
+    <p id="board-loading" style="text-align:center;color:#aaa">讀取中…</p>
+    <div id="board-list"></div>
     <button onclick="document.getElementById('modal-board').style.display='none'" class="btn primary" style="display:block;margin:20px auto 0">關閉</button>
   </div>
 </div>
@@ -450,8 +460,14 @@ function genCode(){
   for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];
   return s;
 }
-function makePlayer(name){
-  const deck=buildDeck();
+function makePlayer(name,deckOverride){
+  let deck;
+  if(Array.isArray(deckOverride)&&deckOverride.length>0){
+    deck=deckOverride.slice(0,DECK_SIZE);
+    for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  }else{
+    deck=buildDeck();
+  }
   const hand=deck.splice(0,5);
   return {name,faction:"all",leader:"東哥",hp:START_HP,maxMana:1,mana:1,deck,hand,board:new Array(MAX_BOARD).fill(null),didPlay:false,bonusNextMana:0,confirmed:false,redraws:3,energyThisTurn:0};
 }
@@ -488,7 +504,9 @@ function joinRoom(code,n){
     const conn=peer.connect(PEER_PREFIX+code,{reliable:true});
     Net.conn=conn;
     conn.on("open",()=>{
-      conn.send({type:"hello",name:n});
+      // 帶上自己的牌組（用 active deck，未設定則隨機）
+      const myDeck=buildDeck();
+      conn.send({type:"hello",name:n,deck:myDeck});
       $("lobby-code").textContent=code;
       $("lobby-status").textContent="已連上，等待開局…";
     });
@@ -499,7 +517,7 @@ function joinRoom(code,n){
   peer.on("error",()=>toast("找不到這個房間"));
 }
 function handleHost(msg){
-  if(msg.type==="hello")startGame(msg.name);
+  if(msg.type==="hello")startGame(msg.name,msg.deck);
   else if(msg.type==="action"){applyAction(msg.action,"p2");broadcast();}
   else if(msg.type==="leave")showDisconnect();
 }
@@ -511,9 +529,9 @@ function handleGuest(msg){
     if(gameState.winner)setTimeout(showResult,1200);
   }
 }
-function startGame(opName){
+function startGame(opName,opDeck){
   const myName=$("input-name").value.trim()||"玩家 1";
-  const p1=makePlayer(myName),p2=makePlayer(opName||"玩家 2");
+  const p1=makePlayer(myName),p2=makePlayer(opName||"玩家 2",opDeck);
   const first=Math.random()<0.5?"p1":"p2";
   gameState={p1,p2,turn:first,firstPlayer:first,round:1,winner:null,status:"mulligan",fx:[]};
   showScreen("game");broadcast();
@@ -985,7 +1003,45 @@ $("btn-gallery").onclick=()=>{
   });
   $("modal-gallery").style.display="block";
 };
-$("btn-leaderboard").onclick=()=>{$("modal-board").style.display="flex";};
+$("btn-leaderboard").onclick=async()=>{
+  $("modal-board").style.display="flex";
+  const list=$("board-list");list.innerHTML="";
+  $("board-loading").textContent="讀取中…";
+  if(!window.firebase||!window.firebase.auth.currentUser){
+    $("board-loading").textContent="⚠️ 請先登入才能看排行榜";
+    return;
+  }
+  try{
+    const q=window.firebase.query(
+      window.firebase.collection(window.firebase.db,"players"),
+      window.firebase.orderBy("wins","desc"),
+      window.firebase.limit(100)
+    );
+    const snap=await window.firebase.getDocs(q);
+    const rows=[];
+    snap.forEach(d=>{
+      const dd=d.data();
+      rows.push({name:dd.displayName||dd.email||"?",wins:dd.wins||0,faction:dd.faction||"red"});
+    });
+    if(!rows.length){
+      $("board-loading").textContent="還沒有人上榜";
+      return;
+    }
+    $("board-loading").textContent="";
+    const colors={red:"#ff5252",white:"#fff",abyss:"#b388ff",mech:"#9e9e9e"};
+    rows.forEach((r,i)=>{
+      const row=document.createElement("div");
+      row.style.cssText="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #333;font-size:14px";
+      row.innerHTML=`<span style="color:#ffd966;font-weight:bold;width:40px">#${i+1}</span>
+        <span style="flex:1;color:${colors[r.faction]||"#fff"};font-weight:bold;margin-left:8px">${r.name}</span>
+        <span style="color:#4caf50;font-weight:bold">${r.wins} 勝</span>`;
+      list.appendChild(row);
+    });
+  }catch(e){
+    console.warn(e);
+    $("board-loading").textContent="⚠️ 讀取失敗："+(e.code||e.message||"");
+  }
+};
 
 // ============ 卡組彈窗 ============
 let editingDeckIdx=-1; // 正在編輯的卡組槽
@@ -1136,16 +1192,48 @@ function renderDeckModal(){
   }
 }
 
-// 右上角：未登入顯示「點我登入」，登入後顯示 email
+// 右上角：未登入顯示「點我登入」，登入後顯示 email / 名字 + 陣營顏色
 let currentUser=null;
+let playerFaction=localStorage.getItem("clcg_faction")||"red";
+let playerDisplayName=localStorage.getItem("clcg_display_name")||"";
+const FACTION_COLORS={red:"#ff5252",white:"#ffffff",abyss:"#b388ff",mech:"#9e9e9e"};
 function refreshHomeName(){
-  const n=currentUser?(currentUser.email||"已登入"):($("input-name").value.trim()||"點我登入");
-  $("home-name-label").textContent=n;
-  $("home-name-label-tag").textContent=currentUser?"已登入":"來客";
+  const name=currentUser?(playerDisplayName||currentUser.email||"已登入"):(playerDisplayName||"點我登入");
+  const lbl=$("home-name-label");
+  lbl.textContent=name;
+  lbl.style.color=FACTION_COLORS[playerFaction]||"#fff";
+  // 標記目前陣營
+  document.querySelectorAll(".faction-dot").forEach(btn=>{
+    btn.style.border=(btn.dataset.faction===playerFaction)?"2px solid #ffd966":"2px solid transparent";
+  });
 }
-$("home-name-wrap").onclick=()=>{
-  openAuthModal();
+$("home-name-label").onclick=()=>{
+  if(!currentUser){openAuthModal();}
 };
+$("home-edit-name").onclick=()=>{
+  const cur=playerDisplayName||(currentUser?currentUser.email:"");
+  const n=prompt("輸入你的遊戲名字：",cur);
+  if(n&&n.trim()){
+    playerDisplayName=n.trim().slice(0,16);
+    localStorage.setItem("clcg_display_name",playerDisplayName);
+    if(currentUser&&window.firebase){
+      const ref=window.firebase.doc(window.firebase.db,"players",currentUser.uid);
+      window.firebase.setDoc(ref,{displayName:playerDisplayName,faction:playerFaction},{merge:true});
+    }
+    refreshHomeName();
+  }
+};
+document.querySelectorAll(".faction-dot").forEach(btn=>{
+  btn.onclick=()=>{
+    playerFaction=btn.dataset.faction;
+    localStorage.setItem("clcg_faction",playerFaction);
+    if(currentUser&&window.firebase){
+      const ref=window.firebase.doc(window.firebase.db,"players",currentUser.uid);
+      window.firebase.setDoc(ref,{displayName:playerDisplayName,faction:playerFaction},{merge:true});
+    }
+    refreshHomeName();
+  };
+});
 $("input-name").addEventListener("input",refreshHomeName);
 
 // ============ Firebase Auth / Firestore 卡組同步 ============
@@ -1215,7 +1303,10 @@ async function loadDecksFromCloud(){
         saveDecks(d.decks);
         if(typeof d.activeDeck==="number")setActiveDeckIdx(d.activeDeck);
       }
+      if(d.displayName){playerDisplayName=d.displayName;localStorage.setItem("clcg_display_name",playerDisplayName);}
+      if(d.faction){playerFaction=d.faction;localStorage.setItem("clcg_faction",playerFaction);}
       renderDeckModal();
+      refreshHomeName();
     }
   }catch(e){console.warn("load decks failed",e);}
 }
@@ -1468,6 +1559,16 @@ function shake(el){
 function showResult(){
   const win=gameState.winner===Net.mySlot;
   $("result-title").textContent=win?"🏆 你贏了！":"💀 你輸了";
+  // 同步勝場到 Firestore
+  if(win&&currentUser&&window.firebase){
+    try{
+      const ref=window.firebase.doc(window.firebase.db,"players",currentUser.uid);
+      window.firebase.getDoc(ref).then(snap=>{
+        const cur=snap.exists()?(snap.data().wins||0):0;
+        return window.firebase.updateDoc(ref,{wins:cur+1});
+      });
+    }catch(e){console.warn("update wins failed",e);}
+  }
   showScreen("result");
 }
 showScreen("home");
