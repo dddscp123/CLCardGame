@@ -236,13 +236,6 @@ body.hit-shake{animation:shake .3s}
     <label class="field" id="join-code-wrap" style="display:none"><span>房間代碼</span>
       <input id="input-code" type="text" maxlength="6" placeholder="4 位代碼" style="text-transform:uppercase" />
     </label>
-    <div id="home-team-pick" style="display:none;margin:8px 0">
-      <p style="margin:0 0 6px;font-size:13px;color:#aaa">選擇隊伍（2v2）：</p>
-      <div style="display:flex;gap:8px">
-        <button class="btn primary home-team-btn" data-team="A" style="flex:1">Team A</button>
-        <button class="btn home-team-btn" data-team="B" style="flex:1">Team B</button>
-      </div>
-    </div>
     <button id="btn-do-join" class="btn primary" style="display:none">確認加入</button>
     <button id="btn-deck" class="btn" style="margin-top:4px">🃏 我的卡組</button>
     <div style="display:flex;gap:8px;margin-top:8px">
@@ -605,18 +598,19 @@ function renderLobbyPlayers(){
   $("btn-host-start").style.display = Object.keys(Net.lobbyPlayers).length>=need ? "block" : "none";
 }
 function handleHostData(conn,msg){
+  // 反查 action 來自哪個 slot
+  let senderSlot=null;
+  for(const s of Object.keys(Net.conns))if(Net.conns[s]===conn)senderSlot=s;
   if(msg.type==="hello"){
-    if(Net.mode==="2v2"){
-      const team=msg.team||"A";
-      const countA=Object.values(Net.lobbyPlayers).filter(v=>v.team==="A").length;
-      const countB=Object.values(Net.lobbyPlayers).filter(v=>v.team==="B").length;
-      if(team==="A"&&countA>=2){conn.send({type:"lobbyError",msg:"Team A 已滿"});return;}
-      if(team==="B"&&countB>=2){conn.send({type:"lobbyError",msg:"Team B 已滿"});return;}
-    }
-    const slot = Net.mode==="2v2" ? nextFreeSlot2v2(msg.team) : "p2";
+    // 房主自動分配隊伍：A 隊先兩人，B 隊後兩人
+    const countA=Object.values(Net.lobbyPlayers).filter(v=>v.team==="A").length;
+    const countB=Object.values(Net.lobbyPlayers).filter(v=>v.team==="B").length;
+    let assignedTeam;
+    if(countA<=countB)assignedTeam="A";else assignedTeam="B";
+    const slot = Net.mode==="2v2" ? nextFreeSlot2v2(assignedTeam) : "p2";
     Net.conns[slot]=conn;
-    Net.lobbyPlayers[slot]={name:msg.name,team:Net.mode==="2v2"?msg.team:"B",deck:msg.deck};
-    conn.send({type:"joined",slot});
+    Net.lobbyPlayers[slot]={name:msg.name,team:assignedTeam,deck:msg.deck};
+    conn.send({type:"joined",slot,team:assignedTeam});
     renderLobbyPlayers();
     broadcastLobbyRoster();
     if(Net.mode==="1v1"&&Object.keys(Net.lobbyPlayers).length>=2){
@@ -624,7 +618,7 @@ function handleHostData(conn,msg){
     }
   }else if(msg.type==="action"){
     if(gameState){
-      applyAction(msg.action,msg.slot);
+      applyAction(msg.action,senderSlot);
       broadcastState();
       render();playFXRing();
       if(gameState.winner)setTimeout(showResult,1200);
@@ -677,7 +671,7 @@ function joinRoom(code,n,team){
 function handleGuest(msg){
   if(msg.type==="joined"){
     Net.mySlot=msg.slot;
-    Net.myTeam = (Net.mySlot==="p1"||Net.mySlot==="p2")?"A":"B";
+    Net.myTeam=msg.team||((Net.mySlot==="p1"||Net.mySlot==="p2")?"A":"B");
   }else if(msg.type==="lobbyError"){
     toast(msg.msg);
     $("lobby-status").textContent=msg.msg;
@@ -709,7 +703,7 @@ function startGame(){
           p4=makePlayer(Net.lobbyPlayers.p4?.name||"敵方2",Net.lobbyPlayers.p4?.deck);
     const first="p1";
     gameState={p1,p2,p3,p4,mode:"2v2",teams:{A:{hp:60,maxHp:60},B:{hp:60,maxHp:60}},
-      turnOrder:["p1","p3","p2","p4"],turnIdx:0,turn:first,firstPlayer:first,round:1,winner:null,status:"mulligan",fx:[],gaveCardThisTurn:{}};
+      turnOrder:["p1","p2","p3","p4"],turnIdx:0,turn:first,firstPlayer:first,round:1,winner:null,status:"mulligan",fx:[],gaveCardThisTurn:{}};
   }else{
     const p1=makePlayer(myName),p2=makePlayer(Net.lobbyPlayers.p2?.name||"玩家 2",Net.lobbyPlayers.p2?.deck);
     const first=Math.random()<0.5?"p1":"p2";
@@ -909,7 +903,13 @@ function applyAction(act,senderSlot){
     return;
   }
   if(gameState.status!=="playing")return;
-  const cur=gameState.turn, me=gameState[cur], op=gameState[cur==="p1"?"p2":"p1"];
+  const cur=gameState.turn, me=gameState[cur];
+  let op;
+  if(gameState.mode==="2v2"){
+    op=gameState[opponentSlot(cur)];
+  }else{
+    op=gameState[cur==="p1"?"p2":"p1"];
+  }
   gameState.fx=[];
   if(act.type==="play"){
     const cid=me.hand[act.index],card=CARD_BY_ID[cid];
@@ -1087,14 +1087,13 @@ function applyAction(act,senderSlot){
     const atk=me.board.find(m=>m&&m.uid===act.attackerUid);
     if(!atk||atk.sick||atk.attacked||atk.trait==="guard"||atk.stunned)return;
     let myAtk=effAtk(atk,me.board.filter(Boolean));
-    // 收集敵方全場（2v2: 兩名敵人）
-    let enemyBoards=[];
+    // 配對對手（2v2: 只打自己配對的對方）
+    let enemyBoards;
     if(gameState.mode==="2v2"){
-      const myT=myTeamOf(cur);
-      const enemySlots = myT==="A"?["p3","p4"]:["p1","p2"];
-      enemyBoards = enemySlots.map(s=>gameState[s].board);
+      const eSlot=opponentSlot(cur);
+      enemyBoards=[gameState[eSlot].board];
     }else{
-      enemyBoards = [op.board];
+      enemyBoards=[op.board];
     }
     const opTaunts=enemyBoards.flat().filter(m=>m&&m.trait==="taunt");
     if(atk.cardId==="sword"){}
@@ -1121,7 +1120,6 @@ function applyAction(act,senderSlot){
         if(op.hp<=0){op.hp=0;gameState.winner=cur==="p1"?"p2":"p1";gameState.status="finished";}
       }
     }else{
-      // 找到目標所在的 board
       let target=null,tPos=-1,targetOwner=null;
       for(const b of enemyBoards){
         const idx=b.findIndex(m=>m&&m.uid===act.targetUid);
@@ -1136,9 +1134,20 @@ function applyAction(act,senderSlot){
         if(target.type==="vehicle"&&atk.type==="vehicle")me.bonusNextMana=1;
         if(atk.cardId==="gunner")atk.baseAtk+=1;
       }
-      // 清兩邊場上的屍體
-      enemyBoards.forEach(b=>{for(let i=0;i<MAX_BOARD;i++){if(b[i]&&b[i].hp<=0)triggerDeathrattles(b,i,findPlayerByBoard(b),me,gameState.fx);b[i]=null;}});
-      for(let i=0;i<MAX_BOARD;i++){if(me.board[i]&&me.board[i].hp<=0)triggerDeathrattles(me.board,i,me,findPlayerByBoard(enemyBoards[0]),gameState.fx);me.board[i]=null;}
+      // 清屍
+      for(let i=0;i<MAX_BOARD;i++){
+        if(targetOwner[i]&&targetOwner[i].hp<=0){
+          const enemyP=findPlayerByBoard(targetOwner);
+          triggerDeathrattles(targetOwner,i,enemyP,me,gameState.fx);
+          targetOwner[i]=null;
+        }
+      }
+      for(let i=0;i<MAX_BOARD;i++){
+        if(me.board[i]&&me.board[i].hp<=0){
+          triggerDeathrattles(me.board,i,me,findPlayerByBoard(enemyBoards[0]),gameState.fx);
+          me.board[i]=null;
+        }
+      }
     }
     atk.attacked=true;
     if(gameState.mode!=="2v2"&&me.hp<=0){me.hp=0;gameState.winner=cur==="p1"?"p2":"p1";gameState.status="finished";}
@@ -1220,7 +1229,7 @@ function doPlayCard(handIdx,targetUid,pos){
     if(pos===undefined&&!me.board.some(x=>!x)){toast("場上滿了");return;}
     if(pos!==undefined&&me.board[pos]){toast("該格已有卡");return;}
   }
-  if(Net.role==="host"){applyAction({type:"play",index:handIdx,targetUid,pos});broadcast();}
+  if(Net.role==="host"){applyAction({type:"play",index:handIdx,targetUid,pos});broadcastState();render();playFXRing();if(gameState.winner)setTimeout(showResult,1200);}
   else Net.conn.send({type:"action",action:{type:"play",index:handIdx,targetUid,pos}});
   targeting=null;placingHandIdx=null;
 }
@@ -1277,14 +1286,20 @@ function findPlayerByBoard(b){
   return null;
 }
 function opData(){
-  // 1v1: the other player. 2v2: first enemy player
+  // 1v1: the other player. 2v2: 配對對手 p1↔p3, p2↔p4
   if(!gameState)return null;
   if(gameState.mode==="2v2"){
-    const myT=myTeamOf(Net.mySlot);
-    const enemySlot = myT==="A" ? "p3" : "p1";
-    return gameState[enemySlot];
+    const pairMap={p1:"p3",p2:"p4",p3:"p1",p4:"p2"};
+    return gameState[pairMap[Net.mySlot]]||gameState.p2;
   }
   return gameState[Net.mySlot==="p1"?"p2":"p1"];
+}
+function opponentSlot(slot){
+  if(gameState&&gameState.mode==="2v2"){
+    const pairMap={p1:"p3",p2:"p4",p3:"p1",p4:"p2"};
+    return pairMap[slot];
+  }
+  return slot==="p1"?"p2":"p1";
 }
 function startTimer(){stopTimer();timeLeft=TURN_TIME;updateTimerUI();timerId=setInterval(()=>{timeLeft--;updateTimerUI();if(timeLeft<=0){stopTimer();doEnd();}},1000);}
 function stopTimer(){if(timerId){clearInterval(timerId);timerId=null;}}
@@ -1298,7 +1313,6 @@ function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");cle
 
 $("btn-join").onclick=()=>{
   $("join-code-wrap").style.display="block";
-  $("home-team-pick").style.display="block";
   $("btn-do-join").style.display="block";
 };
 let pickedMode="1v1", pickedTeam="A";
@@ -1357,9 +1371,9 @@ $("btn-give-card").onclick=()=>{
   if(!isMyTurn())return;
   if(gameState.mode!=="2v2")return;
   if(gameState.gaveCardThisTurn[Net.mySlot]){toast("本回合已給過");return;}
-  if(givingCardIdx==null){toast("點一張手牌再按這裡");return;}
-  sendAction({type:"giveCard",index:givingCardIdx});
-  givingCardIdx=null;
+  // 進入選牌模式：手牌發紅光
+  givingCardIdx = givingCardIdx==null ? -2 : null; // -2 = 選牌模式
+  toast(givingCardIdx===-2?"點一張手牌給隊友":"取消");
   render();
 };
 $("btn-back-home").onclick=quit;
@@ -1743,15 +1757,14 @@ function render(){
   if(gameState.mode==="2v2"){
     const myT=myTeamOf(Net.mySlot);
     const enemyT=myT==="A"?"B":"A";
+    const mate=gameState[myTeamMateSlot()];
     $("my-hp").textContent=teamHP(myT).hp+"/"+teamHP(myT).maxHp;
     $("op-hp").textContent=teamHP(enemyT).hp+"/"+teamHP(enemyT).maxHp;
     $("op-name").textContent="Team "+enemyT;
-    $("my-name").textContent="Team "+myT;
-    $("btn-give-card").style.display="";
-    $("btn-give-card").disabled = !isMyTurn() || !!gameState.gaveCardThisTurn[Net.mySlot];
-    if(gameState.gaveCardThisTurn[Net.mySlot])$("btn-give-card").textContent="已給隊友";
-    else $("btn-give-card").textContent="給隊友一張";
+    $("my-name").innerHTML="Team "+myT+(mate?`<br><span style="font-size:10px;color:#8ac">🤝 ${mate.name}</span>`:"");
   }else{
+    $("my-name").textContent=me.leader||"東哥";
+    $("op-name").textContent=(op.leader||"東哥")+"（"+(op.name||"對手")+"）";
     $("my-hp").textContent=Math.max(0,me.hp);
     $("op-hp").textContent=Math.max(0,op.hp);
     $("btn-give-card").style.display="none";
@@ -1777,7 +1790,23 @@ function render(){
       t.textContent=`你的回合（第 ${gameState.round} 回合）`;t.classList.remove("opp");startTimer();
       $("btn-end-turn").style.display="";
     }else{
-      t.textContent=`${op.name||"對手"} 思考中…`;t.classList.add("opp");stopTimer();
+      // 2v2: 顯示等待隊友
+      if(gameState.mode==="2v2"){
+        const mateSlot=myTeamMateSlot();
+        const mate=gameState[mateSlot];
+        // 檢查是否同一隊還有人在玩
+        const myT=myTeamOf(Net.mySlot);
+        const teamSlots = myT==="A"?["p1","p2"]:["p3","p4"];
+        const teammateStillPlaying = teamSlots.some(s=>s!==Net.mySlot&&gameState[s]&&!gameState[s].didPlay);
+        if(teammateStillPlaying){
+          t.textContent="等待隊友出牌…";t.classList.add("opp");
+        }else{
+          t.textContent=`${op.name||"對手"} 思考中…`;t.classList.add("opp");
+        }
+      }else{
+        t.textContent=`${op.name||"對手"} 思考中…`;t.classList.add("opp");
+      }
+      stopTimer();
       $("btn-end-turn").style.display="";
     }
   }
@@ -1802,7 +1831,8 @@ function render(){
       $("btn-give-card").style.display="";
       $("btn-give-card").disabled = !isMyTurn() || !!gameState.gaveCardThisTurn[Net.mySlot];
       if(gameState.gaveCardThisTurn[Net.mySlot])$("btn-give-card").textContent="已支援";
-      else $("btn-give-card").textContent="🃏 卡牌支援（給隊友一張）";
+      else if(givingCardIdx===-2)$("btn-give-card").textContent="取消選牌";
+      else $("btn-give-card").textContent="🃏 卡牌支援";
     }
   }else{
     const mateEl=document.getElementById("mate-hand-area");
@@ -1885,6 +1915,7 @@ function renderHand(me){
     el.className="card f-"+card.faction;
     if(me.mana<card.cost||!isMyTurn()||(card.type!=="spell"&&!card.bcTarget&&!me.board.some(x=>!x)))el.classList.add("unplayable");
     if(targeting&&targeting.spellIdx===i)el.classList.add("selected-spell");
+    if(givingCardIdx===-2)el.style.boxShadow="0 0 12px #ff5252, inset 0 0 8px rgba(255,82,82,.5)";
     let statsHTML="";
     if(card.type==="unit"||card.type==="vehicle"||card.type==="building"||card.type==="general"){
       statsHTML=`
@@ -1913,6 +1944,15 @@ function renderHand(me){
 function onCardClick(i){
   if(gameState.status==="mulligan"){
     if(!myData().confirmed&&myData().redraws>0)doRedraw(i);
+    return;
+  }
+  // 卡牌支援模式：點一張手牌送給隊友
+  if(givingCardIdx===-2){
+    if(!isMyTurn())return;
+    if(gameState.gaveCardThisTurn[Net.mySlot]){toast("本回合已給過");return;}
+    sendAction({type:"giveCard",index:i});
+    givingCardIdx=null;
+    render();
     return;
   }
   if(!isMyTurn()){toast("還不是你的回合");return;}
